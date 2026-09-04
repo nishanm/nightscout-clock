@@ -72,6 +72,19 @@ enum class BRIGHTNES_MODE : uint8_t {
     AUTO_DIMMED = 101,
 };
 
+// Colours available for the "data is old" state.
+//
+// GRAY is the default and preserves the original behaviour, but it is not readable at
+// MIN_BRIGHTNESS: 0xa514 is (165, 162, 165) and no channel is at maximum, so on a clock running
+// at brightness 1 a fully stale reading renders as a blank display. The alternatives all keep at
+// least one channel at maximum and stay visible there.
+enum class STALE_COLOR : uint8_t {
+    GRAY = 0,
+    CYAN = 1,
+    MAGENTA = 2,
+    BLUE = 3,
+};
+
 inline String toString(BG_TREND trend) {
     switch (trend) {
         case BG_TREND::NONE:
@@ -97,6 +110,38 @@ inline String toString(BG_TREND trend) {
         default:
             return "unknown";
     }
+}
+
+inline String toString(STALE_COLOR color) {
+    switch (color) {
+        case STALE_COLOR::CYAN:
+            return "cyan";
+        case STALE_COLOR::MAGENTA:
+            return "magenta";
+        case STALE_COLOR::BLUE:
+            return "blue";
+        case STALE_COLOR::GRAY:
+        default:
+            return "gray";
+    }
+}
+
+// Parses the value written by toString(STALE_COLOR). An unknown or missing value falls back
+// rather than failing, so an older config file - or a hand-edited one - still loads.
+inline STALE_COLOR staleColorFromString(const String& value, STALE_COLOR fallback) {
+    if (value == "gray") {
+        return STALE_COLOR::GRAY;
+    }
+    if (value == "cyan") {
+        return STALE_COLOR::CYAN;
+    }
+    if (value == "magenta") {
+        return STALE_COLOR::MAGENTA;
+    }
+    if (value == "blue") {
+        return STALE_COLOR::BLUE;
+    }
+    return fallback;
 }
 
 inline String toString(BRIGHTNES_MODE mode) {

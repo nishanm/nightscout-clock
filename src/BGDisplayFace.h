@@ -36,6 +36,11 @@ public:
     virtual void showNoData() const;
     virtual RenderDecision getRenderDecision(const RenderContext& ctx) const;
     virtual void renderPartial(const RenderContext& ctx) const;
+
+protected:
+    // Colour for a reading past the data-is-old threshold. Configurable because the default
+    // gray is not visible at MIN_BRIGHTNESS.
+    uint16_t getOldColor() const;
 };
 
 #endif
