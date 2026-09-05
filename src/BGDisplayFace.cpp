@@ -13,6 +13,18 @@ uint16_t BGDisplayFace::getDataOldColor() const {
     return static_cast<uint16_t>(SettingsManager.settings.data_old_color);
 }
 
+bool BGDisplayFace::isEarlyStale(const GlucoseReading& reading) const {
+    if (!SettingsManager.settings.stale_early_enable) {
+        return false;
+    }
+
+    return reading.getSecondsAgo() >= 60 * SettingsManager.settings.stale_early_minutes;
+}
+
+uint16_t BGDisplayFace::getEarlyStaleColor() const {
+    return static_cast<uint16_t>(SettingsManager.settings.stale_early_color);
+}
+
 RenderDecision BGDisplayFace::getRenderDecision(const RenderContext& ctx) const {
     if (ctx.reason == RenderReason::TIME_TICK) {
         if (ctx.dataIsOld != ctx.wasDataOld) {

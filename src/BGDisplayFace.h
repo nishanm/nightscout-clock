@@ -41,6 +41,11 @@ protected:
     // Configurable color for old readings and no-data screens;
     // gray can be invisible at minimum brightness.
     uint16_t getDataOldColor() const;
+
+    // True once a reading is older than the early-stale threshold. Only the lower bound is
+    // checked here; callers test the fully-old state first, so that keeps precedence.
+    bool isEarlyStale(const GlucoseReading& reading) const;
+    uint16_t getEarlyStaleColor() const;
 };
 
 #endif

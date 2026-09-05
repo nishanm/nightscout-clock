@@ -236,6 +236,26 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.data_old_color = displayColorFromString(
         (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
+    // Early stale indicator - a warning colour shown before the data-is-old threshold
+    settings.stale_early_enable = (*doc)["stale_early_enable"].as<bool>();
+    settings.stale_early_minutes = (*doc)["stale_early_minutes"].as<int>();
+    settings.stale_early_color =
+        displayColorFromString((*doc)["stale_early_color"].as<String>(), DISPLAY_COLOR::CYAN);
+
+    // The warning only means anything strictly inside the data-is-old window, so it is checked
+    // against the threshold resolved above rather than a constant. Below the minimum it would
+    // fire on every normal reading gap; at or above the threshold it would never be seen.
+    // Disable it outright rather than apply half of it.
+    const int minimumEarlyStaleMinutes = 2;
+    if (settings.stale_early_enable &&
+        (settings.stale_early_minutes < minimumEarlyStaleMinutes ||
+         settings.stale_early_minutes >= settings.bg_data_too_old_threshold_minutes)) {
+        DEBUG_PRINTLN(
+            "Early stale threshold must be at least 2 minutes and below the data-is-old threshold, "
+            "disabling the early stale indicator.");
+        settings.stale_early_enable = false;
+    }
+
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
     settings.web_auth_password = (*doc)["web_auth_password"].as<String>();
@@ -365,6 +385,9 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
     (*doc)["data_old_color"] = toString(settings.data_old_color);
+    (*doc)["stale_early_enable"] = settings.stale_early_enable;
+    (*doc)["stale_early_minutes"] = settings.stale_early_minutes;
+    (*doc)["stale_early_color"] = toString(settings.stale_early_color);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;
