@@ -11,6 +11,133 @@ bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
 }
+
+// "HH:MM" as minutes since midnight, or -1 when it is not a readable time of day.
+int parseTimeOfDayMinutes(const String& value) {
+    int colon = value.indexOf(':');
+    if (colon < 1 || (int)value.length() - colon != 3) {
+        return -1;
+    }
+    for (unsigned int i = 0; i < value.length(); i++) {
+        if ((int)i != colon && !isDigit(value[i])) {
+            return -1;
+        }
+    }
+
+    int hours = value.substring(0, colon).toInt();
+    int minutes = value.substring(colon + 1).toInt();
+    if (hours > 23 || minutes > 59) {
+        return -1;
+    }
+    return hours * 60 + minutes;
+}
+
+String minutesAsTimeOfDay(int minutes) {
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes / 60, minutes % 60);
+    return String(buffer);
+}
+
+// Days are listed as tm_wday digits, so "12345" is Monday to Friday and "0123456" is every day.
+uint8_t parseAlertWindowDays(const String& value) {
+    uint8_t days = 0;
+    for (unsigned int i = 0; i < value.length(); i++) {
+        char day = value[i];
+        if (day >= '0' && day <= '6') {
+            days |= (uint8_t)(1 << (day - '0'));
+        }
+    }
+    return days;
+}
+
+String alertWindowDaysAsString(uint8_t days) {
+    String value = "";
+    for (int day = 0; day < 7; day++) {
+        if (days & (1 << day)) {
+            value += (char)('0' + day);
+        }
+    }
+    return value;
+}
+
+std::vector<AlertWindow> readAlertWindows(JsonVariantConst configured) {
+    std::vector<AlertWindow> windows;
+    if (!configured.is<JsonArrayConst>()) {
+        return windows;
+    }
+
+    for (JsonVariantConst entry : configured.as<JsonArrayConst>()) {
+        if (!entry.is<JsonObjectConst>()) {
+            continue;
+        }
+
+        AlertWindow window;
+        window.days = parseAlertWindowDays(entry["days"].as<String>());
+        window.startMinutes = parseTimeOfDayMinutes(entry["from"].as<String>());
+        window.endMinutes = parseTimeOfDayMinutes(entry["to"].as<String>());
+
+        // A window with no days, an unreadable time or no duration can never open. Dropping it
+        // here keeps the alarm evaluation free of special cases, and an alert window that cannot
+        // be understood must never end up silencing an alarm.
+        if (window.days == 0 || window.startMinutes < 0 || window.endMinutes < 0 ||
+            window.startMinutes == window.endMinutes) {
+            DEBUG_PRINTLN("Ignoring an alert window that could never open");
+            continue;
+        }
+
+        windows.push_back(window);
+    }
+
+    return windows;
+}
+
+// Alert windows replaced the fixed silence intervals, and a configuration written before them has
+// no window list to read. Both old values are the exact complement of an all week window, so the
+// translation is lossless: the clock keeps alerting at precisely the same times it did before.
+std::vector<AlertWindow> alertWindowsFromSilenceInterval(const String& silenceInterval) {
+    std::vector<AlertWindow> windows;
+    AlertWindow window;
+    window.days = 0x7F;  // every day
+
+    if (silenceInterval == "22_8") {
+        window.startMinutes = 8 * 60;  // silent 22:00 - 08:00, so alerting 08:00 - 22:00
+        window.endMinutes = 22 * 60;
+    } else if (silenceInterval == "8_22") {
+        window.startMinutes = 22 * 60;  // silent 08:00 - 22:00, so alerting 22:00 - 08:00
+        window.endMinutes = 8 * 60;
+    } else {
+        return windows;  // "0", empty or unrecognised: alert at any time
+    }
+
+    windows.push_back(window);
+    return windows;
+}
+
+std::vector<AlertWindow> loadAlertWindows(JsonDocument& doc, const char* windowsKey,
+                                          const char* legacySilenceKey) {
+    if (doc[windowsKey].is<JsonArrayConst>()) {
+        return readAlertWindows(doc[windowsKey]);
+    }
+
+    DEBUG_PRINTF("No alert windows for %s, migrating the silence interval instead\n", windowsKey);
+    return alertWindowsFromSilenceInterval(doc[legacySilenceKey].as<String>());
+}
+
+void writeAlertWindows(JsonDocument& doc, const char* windowsKey, const char* legacySilenceKey,
+                       const std::vector<AlertWindow>& windows) {
+    doc.remove(windowsKey);
+    // The migration above only runs while the window list is absent, so the old key has to go or
+    // a stale silence interval could come back the next time this file is read.
+    doc.remove(legacySilenceKey);
+
+    JsonArray configured = doc[windowsKey].to<JsonArray>();
+    for (const AlertWindow& window : windows) {
+        JsonObject entry = configured.add<JsonObject>();
+        entry["days"] = alertWindowDaysAsString(window.days);
+        entry["from"] = minutesAsTimeOfDay(window.startMinutes);
+        entry["to"] = minutesAsTimeOfDay(window.endMinutes);
+    }
+}
 }  // namespace
 
 // The getter for the instantiated singleton instance
@@ -23,6 +150,35 @@ SettingsManager_& SettingsManager_::getInstance() {
 SettingsManager_& SettingsManager = SettingsManager.getInstance();
 
 void SettingsManager_::setup() { LittleFS.begin(); }
+
+const char* SettingsManager_::validateAlertWindows(JsonVariantConst configured) {
+    if (configured.isNull()) {
+        return NULL;
+    }
+    if (!configured.is<JsonArrayConst>()) {
+        return "Alert windows must be an array";
+    }
+
+    for (JsonVariantConst entry : configured.as<JsonArrayConst>()) {
+        if (!entry.is<JsonObjectConst>()) {
+            return "Every alert window must be an object";
+        }
+        if (parseAlertWindowDays(entry["days"].as<String>()) == 0) {
+            return "Every alert window needs at least one day, given as digits where 0 is Sunday";
+        }
+
+        int startMinutes = parseTimeOfDayMinutes(entry["from"].as<String>());
+        int endMinutes = parseTimeOfDayMinutes(entry["to"].as<String>());
+        if (startMinutes < 0 || endMinutes < 0) {
+            return "Alert window times must be written as HH:MM";
+        }
+        if (startMinutes == endMinutes) {
+            return "An alert window cannot start and end at the same time";
+        }
+    }
+
+    return NULL;
+}
 
 bool copyFile(const char* srcPath, const char* destPath) {
     File srcFile = LittleFS.open(srcPath, "r");
@@ -194,16 +350,18 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.alarm_urgent_low_enabled = (*doc)["alarm_urgent_low_enabled"].as<bool>();
     settings.alarm_urgent_low_mgdl = (*doc)["alarm_urgent_low_value"].as<int>();
     settings.alarm_urgent_low_snooze_minutes = (*doc)["alarm_urgent_low_snooze_interval"].as<int>();
-    settings.alarm_urgent_low_silence_interval =
-        (*doc)["alarm_urgent_low_silence_interval"].as<String>();
+    settings.alarm_urgent_low_alert_windows =
+        loadAlertWindows(*doc, "alarm_urgent_low_alert_windows", "alarm_urgent_low_silence_interval");
     settings.alarm_low_enabled = (*doc)["alarm_low_enabled"].as<bool>();
     settings.alarm_low_mgdl = (*doc)["alarm_low_value"].as<int>();
     settings.alarm_low_snooze_minutes = (*doc)["alarm_low_snooze_interval"].as<int>();
-    settings.alarm_low_silence_interval = (*doc)["alarm_low_silence_interval"].as<String>();
+    settings.alarm_low_alert_windows =
+        loadAlertWindows(*doc, "alarm_low_alert_windows", "alarm_low_silence_interval");
     settings.alarm_high_enabled = (*doc)["alarm_high_enabled"].as<bool>();
     settings.alarm_high_mgdl = (*doc)["alarm_high_value"].as<int>();
     settings.alarm_high_snooze_minutes = (*doc)["alarm_high_snooze_interval"].as<int>();
-    settings.alarm_high_silence_interval = (*doc)["alarm_high_silence_interval"].as<String>();
+    settings.alarm_high_alert_windows =
+        loadAlertWindows(*doc, "alarm_high_alert_windows", "alarm_high_silence_interval");
     settings.alarm_high_melody = (*doc)["alarm_high_melody"].as<String>();
     settings.alarm_low_melody = (*doc)["alarm_low_melody"].as<String>();
     settings.alarm_urgent_low_melody = (*doc)["alarm_urgent_low_melody"].as<String>();
@@ -336,15 +494,18 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["alarm_urgent_low_enabled"] = settings.alarm_urgent_low_enabled;
     (*doc)["alarm_urgent_low_value"] = settings.alarm_urgent_low_mgdl;
     (*doc)["alarm_urgent_low_snooze_interval"] = settings.alarm_urgent_low_snooze_minutes;
-    (*doc)["alarm_urgent_low_silence_interval"] = settings.alarm_urgent_low_silence_interval;
+    writeAlertWindows(*doc, "alarm_urgent_low_alert_windows",
+                      "alarm_urgent_low_silence_interval", settings.alarm_urgent_low_alert_windows);
     (*doc)["alarm_low_enabled"] = settings.alarm_low_enabled;
     (*doc)["alarm_low_value"] = settings.alarm_low_mgdl;
     (*doc)["alarm_low_snooze_interval"] = settings.alarm_low_snooze_minutes;
-    (*doc)["alarm_low_silence_interval"] = settings.alarm_low_silence_interval;
+    writeAlertWindows(*doc, "alarm_low_alert_windows", "alarm_low_silence_interval",
+                      settings.alarm_low_alert_windows);
     (*doc)["alarm_high_enabled"] = settings.alarm_high_enabled;
     (*doc)["alarm_high_value"] = settings.alarm_high_mgdl;
     (*doc)["alarm_high_snooze_interval"] = settings.alarm_high_snooze_minutes;
-    (*doc)["alarm_high_silence_interval"] = settings.alarm_high_silence_interval;
+    writeAlertWindows(*doc, "alarm_high_alert_windows", "alarm_high_silence_interval",
+                      settings.alarm_high_alert_windows);
     (*doc)["alarm_high_melody"] = settings.alarm_high_melody;
     (*doc)["alarm_low_melody"] = settings.alarm_low_melody;
     (*doc)["alarm_urgent_low_melody"] = settings.alarm_urgent_low_melody;
