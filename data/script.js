@@ -958,7 +958,7 @@
          // Custom No Data Timer
         json['custom_nodatatimer_enable'] = $('#custom_nodatatimer_enable').is(':checked');
         json['custom_nodatatimer'] = $('#custom_nodatatimer').val();
-        json['stale_old_color'] = $('#stale_old_color').val();
+        json['data_old_color'] = $('#data_old_color').val();
 
         // Web interface authentication
         json['web_auth_enable'] = $('#web_auth_enable').is(':checked');
@@ -1316,7 +1316,7 @@
 
         toggleCustomNoDataSettings();
 
-        $('#stale_old_color').val(json['stale_old_color'] || 'gray');
+        $('#data_old_color').val(json['data_old_color'] || 'gray');
 
         // Web interface authentication
         webAuthPassword = json['web_auth_password'] || "";

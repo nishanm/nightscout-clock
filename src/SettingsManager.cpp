@@ -233,9 +233,9 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
 
-    // Colour used once the data is older than the threshold above
-    settings.stale_old_color =
-        staleColorFromString((*doc)["stale_old_color"].as<String>(), STALE_COLOR::GRAY);
+    // Colour used once the data is older than the threshold above, and for the "no data" screen
+    settings.data_old_color =
+        displayColorFromString((*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
@@ -365,7 +365,7 @@ bool SettingsManager_::saveSettingsToFile() {
     // Custom No Data Timer
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
-    (*doc)["stale_old_color"] = toString(settings.stale_old_color);
+    (*doc)["data_old_color"] = toString(settings.data_old_color);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;

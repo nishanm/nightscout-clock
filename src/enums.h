@@ -72,17 +72,24 @@ enum class BRIGHTNES_MODE : uint8_t {
     AUTO_DIMMED = 101,
 };
 
-// Colours available for the "data is old" state.
+// Every colour the firmware draws with. The enum value IS the RGB565 code, so a DISPLAY_COLOR can
+// be used wherever a colour is expected without a lookup table, and the codes live in one place
+// rather than two.
 //
-// GRAY is the default and preserves the original behaviour, but it is not readable at
-// MIN_BRIGHTNESS: 0xa514 is (165, 162, 165) and no channel is at maximum, so on a clock running
-// at brightness 1 a fully stale reading renders as a blank display. The alternatives all keep at
-// least one channel at maximum and stay visible there.
-enum class STALE_COLOR : uint8_t {
-    GRAY = 0,
-    CYAN = 1,
-    MAGENTA = 2,
-    BLUE = 3,
+// A note on GRAY, since it is why the data-is-old colour is configurable at all: 0xA514 is
+// (165, 162, 165) and no channel is at its maximum, so at MIN_BRIGHTNESS the panel cannot render
+// it and a stale reading disappears entirely. Every other colour here keeps at least one channel
+// at maximum. See BGDisplayFace::getDataOldColor().
+enum class DISPLAY_COLOR : uint16_t {
+    BLACK = 0x0000,
+    BLUE = 0x001F,
+    GREEN = 0x07E0,
+    CYAN = 0x07FF,
+    GRAY = 0xA514,
+    RED = 0xF800,
+    MAGENTA = 0xF81F,
+    YELLOW = 0xFFE0,
+    WHITE = 0xFFFF,
 };
 
 inline String toString(BG_TREND trend) {
@@ -112,34 +119,59 @@ inline String toString(BG_TREND trend) {
     }
 }
 
-inline String toString(STALE_COLOR color) {
+inline String toString(DISPLAY_COLOR color) {
     switch (color) {
-        case STALE_COLOR::CYAN:
-            return "cyan";
-        case STALE_COLOR::MAGENTA:
-            return "magenta";
-        case STALE_COLOR::BLUE:
+        case DISPLAY_COLOR::BLACK:
+            return "black";
+        case DISPLAY_COLOR::BLUE:
             return "blue";
-        case STALE_COLOR::GRAY:
+        case DISPLAY_COLOR::GREEN:
+            return "green";
+        case DISPLAY_COLOR::CYAN:
+            return "cyan";
+        case DISPLAY_COLOR::RED:
+            return "red";
+        case DISPLAY_COLOR::MAGENTA:
+            return "magenta";
+        case DISPLAY_COLOR::YELLOW:
+            return "yellow";
+        case DISPLAY_COLOR::WHITE:
+            return "white";
+        case DISPLAY_COLOR::GRAY:
         default:
             return "gray";
     }
 }
 
-// Parses the value written by toString(STALE_COLOR). An unknown or missing value falls back
+// Parses the value written by toString(DISPLAY_COLOR). An unknown or missing value falls back
 // rather than failing, so an older config file - or a hand-edited one - still loads.
-inline STALE_COLOR staleColorFromString(const String& value, STALE_COLOR fallback) {
-    if (value == "gray") {
-        return STALE_COLOR::GRAY;
-    }
-    if (value == "cyan") {
-        return STALE_COLOR::CYAN;
-    }
-    if (value == "magenta") {
-        return STALE_COLOR::MAGENTA;
+inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR fallback) {
+    if (value == "black") {
+        return DISPLAY_COLOR::BLACK;
     }
     if (value == "blue") {
-        return STALE_COLOR::BLUE;
+        return DISPLAY_COLOR::BLUE;
+    }
+    if (value == "green") {
+        return DISPLAY_COLOR::GREEN;
+    }
+    if (value == "cyan") {
+        return DISPLAY_COLOR::CYAN;
+    }
+    if (value == "red") {
+        return DISPLAY_COLOR::RED;
+    }
+    if (value == "magenta") {
+        return DISPLAY_COLOR::MAGENTA;
+    }
+    if (value == "yellow") {
+        return DISPLAY_COLOR::YELLOW;
+    }
+    if (value == "white") {
+        return DISPLAY_COLOR::WHITE;
+    }
+    if (value == "gray") {
+        return DISPLAY_COLOR::GRAY;
     }
     return fallback;
 }

@@ -57,7 +57,7 @@
     "custom_hostname": "",
     "custom_nodatatimer_enable": false,
     "custom_nodatatimer": 20,
-    "stale_old_color": "gray",
+    "data_old_color": "gray",
     "web_auth_enable": false,
     "web_auth_password": ""
 }

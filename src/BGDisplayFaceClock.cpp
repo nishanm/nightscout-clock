@@ -101,6 +101,6 @@ void BGDisplayFaceClock::showNoData() const {
         noData = "--.-";
     }
 
-    DisplayManager.setTextColor(BG_COLOR_OLD);
+    DisplayManager.setTextColor(getDataOldColor());
     DisplayManager.printText(33, 6, noData.c_str(), TEXT_ALIGNMENT::RIGHT, 2);
 }
