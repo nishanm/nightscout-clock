@@ -7,6 +7,10 @@
 #include "globals.h"
 
 namespace {
+bool isValidAlarmRepeatInterval(int intervalSeconds) {
+    return intervalSeconds == 60 || intervalSeconds == 120 || intervalSeconds == 300;
+}
+
 bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
@@ -209,6 +213,12 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.alarm_urgent_low_melody = (*doc)["alarm_urgent_low_melody"].as<String>();
     settings.alarm_intensive_mode = (*doc)["alarm_intensive_mode"].as<bool>();
 
+    settings.alarm_repeat_interval_seconds = (*doc)["alarm_repeat_interval_seconds"] | 300;
+    if (!isValidAlarmRepeatInterval(settings.alarm_repeat_interval_seconds)) {
+        DEBUG_PRINTLN("Invalid alarm repeat interval in config, defaulting to 300 seconds");
+        settings.alarm_repeat_interval_seconds = 300;
+    }
+
     // Additional WiFi
     settings.additional_wifi_enable = (*doc)["additional_wifi_enable"].as<bool>();
     settings.additional_wifi_type = (*doc)["additional_wifi_type"].as<String>();
@@ -346,6 +356,7 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["alarm_low_melody"] = settings.alarm_low_melody;
     (*doc)["alarm_urgent_low_melody"] = settings.alarm_urgent_low_melody;
     (*doc)["alarm_intensive_mode"] = settings.alarm_intensive_mode;
+    (*doc)["alarm_repeat_interval_seconds"] = settings.alarm_repeat_interval_seconds;
 
     // Additional WiFi
     (*doc)["additional_wifi_enable"] = settings.additional_wifi_enable;
