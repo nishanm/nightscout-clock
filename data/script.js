@@ -78,6 +78,14 @@
             updatePasswordToggleIcon(passwordField, btn);
         });
 
+        addMelodyPresetHandlers();
+    }
+
+    function addMelodyPresetHandlers() {
+        ['high', 'low', 'urgent_low'].forEach(alarmType => {
+            $(`#alarm_${alarmType}_melody_preset`).on('change', () => applyMelodyPreset(alarmType));
+            $(`#alarm_${alarmType}_melody`).on('input', () => syncMelodyPreset(alarmType));
+        });
     }
 
     function addAdditionalWifiTypeHandler() {
@@ -704,6 +712,8 @@
             clearValidationStatus(`alarm_${alarmType}_silence`);
             clearValidationStatus(`alarm_${alarmType}_melody`);
         }
+
+        $(`#alarm_${alarmType}_melody_preset`).prop('disabled', !alarmState);
     }
 
     function addFocusOutValidationDropDown(fieldName) {
@@ -779,6 +789,29 @@
         } else {
             setElementValidity(dropDown, true);
             return true;
+        }
+    }
+
+    function applyMelodyPreset(alarmType) {
+        const chosen = $(`#alarm_${alarmType}_melody_preset`).val();
+        if (chosen === 'custom') {
+            $(`#alarm_${alarmType}_melody`).focus();
+            return;
+        }
+
+        const melodyField = $(`#alarm_${alarmType}_melody`);
+        melodyField.val(chosen);
+        validateRtttlField(melodyField);
+    }
+
+    // Keeps the picker honest when the melody is typed in or loaded from the clock. Each option's
+    // value is the melody itself, so selecting by value is the whole lookup: a melody that is not in
+    // the list leaves the select matching nothing, which is exactly what "Custom" is for.
+    function syncMelodyPreset(alarmType) {
+        const preset = $(`#alarm_${alarmType}_melody_preset`);
+        preset.val(($(`#alarm_${alarmType}_melody`).val() || '').trim());
+        if (preset.val() === null) {
+            preset.val('custom');
         }
     }
 
@@ -1339,6 +1372,7 @@
         $(`#alarm_${alarmType}_snooze`).val(json[`alarm_${alarmType}_snooze_interval`] || "");
         $(`#alarm_${alarmType}_silence`).val(json[`alarm_${alarmType}_silence_interval`] || "");
         $(`#alarm_${alarmType}_melody`).val(json[`alarm_${alarmType}_melody`] || "");
+        syncMelodyPreset(alarmType);
 
         changeAlarmState($(`#alarm_${alarmType}_enable`));
     }
