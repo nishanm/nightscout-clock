@@ -44,6 +44,7 @@
     "alarm_low_melody": "",
     "alarm_urgent_low_melody": "",
     "alarm_intensive_mode": false,
+    "alarm_repeat_interval_seconds": 300,
     "librelinkup_email": "",
     "librelinkup_password": "",
     "librelinkup_region": "EU",
