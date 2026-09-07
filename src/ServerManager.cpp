@@ -373,7 +373,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 return;
             }
             auto&& data = json.as<JsonObject>();
-            auto sendFaceCycleValidationError = [request](const char* error) {
+            auto sendSaveValidationError = [request](const char* error) {
                 String response = "{\"status\": \"error\", \"error\": \"";
                 response += error;
                 response += "\"}";
@@ -381,7 +381,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             };
 
             if (!data["face_cycle_enabled"].isNull() && !data["face_cycle_enabled"].is<bool>()) {
-                sendFaceCycleValidationError("face_cycle_enabled must be a boolean");
+                sendSaveValidationError("face_cycle_enabled must be a boolean");
                 return;
             }
 
@@ -390,20 +390,20 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             int uniqueFaceCount = 0;
             if (faceCycleEnabled || hasFaceCycleFaces) {
                 if (!data["face_cycle_faces"].is<JsonArray>()) {
-                    sendFaceCycleValidationError("face_cycle_faces must be an array");
+                    sendSaveValidationError("face_cycle_faces must be an array");
                     return;
                 }
 
                 bool selectedFaces[6] = {};
                 for (JsonVariant face : data["face_cycle_faces"].as<JsonArray>()) {
                     if (!face.is<int>()) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                        sendSaveValidationError("Face selections must use IDs from 0 to 5");
                         return;
                     }
 
                     int faceId = face.as<int>();
                     if (faceId < 0 || faceId >= 6) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                        sendSaveValidationError("Face selections must use IDs from 0 to 5");
                         return;
                     }
 
@@ -415,14 +415,27 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             }
 
             if (faceCycleEnabled && uniqueFaceCount < 2) {
-                sendFaceCycleValidationError("Select at least two different clock faces");
+                sendSaveValidationError("Select at least two different clock faces");
                 return;
+            }
+
+            // A window the clock cannot read would be dropped on load, leaving the alarm quiet
+            // during hours the caller believed it had covered. Refuse the save instead.
+            const char* alertWindowKeys[] = {"alarm_high_alert_windows", "alarm_low_alert_windows",
+                                             "alarm_urgent_low_alert_windows"};
+            for (const char* alertWindowKey : alertWindowKeys) {
+                const char* alertWindowError =
+                    SettingsManager_::validateAlertWindows(data[alertWindowKey]);
+                if (alertWindowError != NULL) {
+                    sendSaveValidationError(alertWindowError);
+                    return;
+                }
             }
 
             bool hasFaceCycleInterval = !data["face_cycle_interval_seconds"].isNull();
             if (faceCycleEnabled || hasFaceCycleInterval) {
                 if (!data["face_cycle_interval_seconds"].is<int>()) {
-                    sendFaceCycleValidationError(
+                    sendSaveValidationError(
                         "Face cycle period must be 10, 30, 60, 120, 180, or 300 seconds");
                     return;
                 }
@@ -430,7 +443,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 int intervalSeconds = data["face_cycle_interval_seconds"].as<int>();
                 if (intervalSeconds != 10 && intervalSeconds != 30 && intervalSeconds != 60 &&
                     intervalSeconds != 120 && intervalSeconds != 180 && intervalSeconds != 300) {
-                    sendFaceCycleValidationError(
+                    sendSaveValidationError(
                         "Face cycle period must be 10, 30, 60, 120, 180, or 300 seconds");
                     return;
                 }
@@ -666,6 +679,11 @@ tm ServerManager_::getTimezonedTime() {
     }
     return timeinfo;
 }
+
+// getTimezonedTime() hands back its struct whether or not the clock could read the time, which is
+// harmless for drawing a face but not for a decision an alarm depends on. This reports the failure
+// so the caller can choose what an unknown time should mean.
+bool ServerManager_::tryGetTimezonedTime(tm& timeinfo) { return getLocalTime(&timeinfo); }
 
 void ServerManager_::stop() {
     ws->end();

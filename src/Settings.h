@@ -1,8 +1,22 @@
+#ifndef Settings_h
+#define Settings_h
+
 #include <Arduino.h>
 
 #include <vector>
 
 #include "enums.h"
+
+// One window during which an alarm is allowed to sound.
+//
+// `days` is a bitmask over tm_wday: bit 0 is Sunday through bit 6 is Saturday. It names the day
+// the window STARTS on, so a window that runs past midnight belongs to the evening it began -
+// "every day 18:00-08:00" keeps alerting until 08:00 the following morning.
+struct AlertWindow {
+    uint8_t days = 0;
+    int startMinutes = 0;  // minutes since midnight, 0-1439
+    int endMinutes = 0;
+};
 
 class Settings {
 public:
@@ -39,15 +53,15 @@ public:
     bool alarm_urgent_low_enabled;
     int alarm_urgent_low_mgdl;
     int alarm_urgent_low_snooze_minutes;
-    String alarm_urgent_low_silence_interval;
+    std::vector<AlertWindow> alarm_urgent_low_alert_windows;
     bool alarm_low_enabled;
     int alarm_low_mgdl;
     int alarm_low_snooze_minutes;
-    String alarm_low_silence_interval;
+    std::vector<AlertWindow> alarm_low_alert_windows;
     bool alarm_high_enabled;
     int alarm_high_mgdl;
     int alarm_high_snooze_minutes;
-    String alarm_high_silence_interval;
+    std::vector<AlertWindow> alarm_high_alert_windows;
     String alarm_high_melody;
     String alarm_low_melody;
     String alarm_urgent_low_melody;
@@ -65,3 +79,5 @@ public:
     bool web_auth_enable;
     String web_auth_password;
 };
+
+#endif

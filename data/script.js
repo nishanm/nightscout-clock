@@ -57,6 +57,9 @@
         $('#btn_high_alarm_try').on('click', tryAlarm);
         $('#btn_low_alarm_try').on('click', tryAlarm);
         $('#btn_urgent_low_alarm_try').on('click', tryAlarm);
+        $('#alarm_high_add_window').on('click', () => addAlertWindowRow('high'));
+        $('#alarm_low_add_window').on('click', () => addAlertWindowRow('low'));
+        $('#alarm_urgent_low_add_window').on('click', () => addAlertWindowRow('urgent_low'));
         $('#btn_load_limits_from_ns').on('click', loadNightscoutData);
         $("#btn_save").on('click', validateAndSave);
         $('#btn_auth_login').on('click', loginToWebAuth);
@@ -686,24 +689,178 @@
         const alarmState = $(target).is(':checked');
         $(`#alarm_${alarmType}_value`).prop('disabled', !alarmState);
         $(`#alarm_${alarmType}_snooze`).prop('disabled', !alarmState);
-        $(`#alarm_${alarmType}_silence`).prop('disabled', !alarmState);
         $(`#alarm_${alarmType}_melody`).prop('disabled', !alarmState);
+        setAlertWindowsDisabled(alarmType, !alarmState);
 
         if (alarmState) {
             addFocusOutValidation(`alarm_${alarmType}_value`, bgValidationPattternSelector);
             addFocusOutValidationDropDown(`alarm_${alarmType}_snooze`);
-            addFocusOutValidationDropDown(`alarm_${alarmType}_silence`);
             addFocusOutValidationRtttl(`alarm_${alarmType}_melody`);
         } else {
             removeFocusOutValidation(`alarm_${alarmType}_value`);
             removeFocusOutValidationDropDown(`alarm_${alarmType}_snooze`);
-            removeFocusOutValidationDropDown(`alarm_${alarmType}_silence`);
             removeFocusOutValidationRtttl(`alarm_${alarmType}_melody`);
             clearValidationStatus(`alarm_${alarmType}_value`);
             clearValidationStatus(`alarm_${alarmType}_snooze`);
-            clearValidationStatus(`alarm_${alarmType}_silence`);
+            validateAlertWindows(alarmType);
             clearValidationStatus(`alarm_${alarmType}_melody`);
         }
+    }
+
+    // Alert windows: the times an alarm is allowed to sound. Days are stored as tm_wday digits so
+    // that "12345" is Monday to Friday, matching what the firmware parses.
+    const ALERT_WINDOW_DAYS = [
+        { value: 1, label: 'Mon' },
+        { value: 2, label: 'Tue' },
+        { value: 3, label: 'Wed' },
+        { value: 4, label: 'Thu' },
+        { value: 5, label: 'Fri' },
+        { value: 6, label: 'Sat' },
+        { value: 0, label: 'Sun' },
+    ];
+
+    let alertWindowRowCount = 0;
+
+    // Builds one window row without attaching it, so a whole list can be rendered and then
+    // validated once rather than after every row.
+    //
+    // Only values this file owns are interpolated into the markup: the day numbers and labels come
+    // from ALERT_WINDOW_DAYS and the row id from a counter. The stored times are applied with
+    // .val() below instead, so a malformed config.json cannot inject markup into the settings page.
+    function buildAlertWindowRow(alarmType, alertWindow) {
+        const rowId = `alert_window_${++alertWindowRowCount}`;
+        const days = (alertWindow && alertWindow.days) || '0123456';
+
+        const dayButtons = ALERT_WINDOW_DAYS.map(day => {
+            const dayId = `${rowId}_day_${day.value}`;
+            const checked = days.indexOf(String(day.value)) >= 0 ? ' checked' : '';
+            return `<input type="checkbox" class="btn-check alert-window-day" id="${dayId}" value="${day.value}" autocomplete="off"${checked}>`
+                + `<label class="btn btn-outline-primary" for="${dayId}">${day.label}</label>`;
+        }).join('');
+
+        const row = $(`<div class="row g-2 align-items-center alert-window mb-2 p-1" id="${rowId}">
+                <div class="col-lg-6">
+                    <div class="btn-group btn-group-sm w-100" role="group" aria-label="Days">${dayButtons}</div>
+                </div>
+                <div class="col-5 col-lg-2">
+                    <input type="time" class="form-control form-control-sm alert-window-from" aria-label="Alert window start">
+                </div>
+                <div class="col-5 col-lg-2">
+                    <input type="time" class="form-control form-control-sm alert-window-to" aria-label="Alert window end">
+                </div>
+                <div class="col-2 col-lg-2">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 alert-window-remove" aria-label="Remove alert window">Remove</button>
+                </div>
+            </div>`);
+
+        // A new row defaults to a daytime window, which is valid immediately and obvious to edit.
+        row.find('.alert-window-from').val((alertWindow && alertWindow.from) || '08:00');
+        row.find('.alert-window-to').val((alertWindow && alertWindow.to) || '22:00');
+
+        row.find('.alert-window-remove').on('click', () => {
+            row.remove();
+            validateAlertWindows(alarmType);
+        });
+        row.find('input').on('input change', () => validateAlertWindows(alarmType));
+
+        return row;
+    }
+
+    // Adds a single row, for the "Add window" button.
+    function addAlertWindowRow(alarmType, alertWindow) {
+        $(`#alarm_${alarmType}_windows`).append(buildAlertWindowRow(alarmType, alertWindow));
+        setAlertWindowsDisabled(alarmType, !$(`#alarm_${alarmType}_enable`).is(':checked'));
+        validateAlertWindows(alarmType);
+    }
+
+    function renderAlertWindows(alarmType, alertWindows) {
+        const container = $(`#alarm_${alarmType}_windows`);
+        container.empty();
+        (alertWindows || []).forEach(alertWindow => {
+            container.append(buildAlertWindowRow(alarmType, alertWindow));
+        });
+        setAlertWindowsDisabled(alarmType, !$(`#alarm_${alarmType}_enable`).is(':checked'));
+        validateAlertWindows(alarmType);
+    }
+
+    function setAlertWindowsDisabled(alarmType, disabled) {
+        $(`#alarm_${alarmType}_windows`).find('input, button').prop('disabled', disabled);
+        $(`#alarm_${alarmType}_add_window`).prop('disabled', disabled);
+    }
+
+    function collectAlertWindows(alarmType) {
+        const alertWindows = [];
+        $(`#alarm_${alarmType}_windows`).find('.alert-window').each((_, element) => {
+            const row = $(element);
+            // Sorted so the saved configuration does not change just because the boxes were
+            // ticked in a different order. Single digits sort numerically either way.
+            const days = row.find('.alert-window-day:checked')
+                .map((_, checkbox) => checkbox.value).get().sort().join('');
+            const from = row.find('.alert-window-from').val() || '';
+            const to = row.find('.alert-window-to').val() || '';
+
+            // validateAlertWindows blocks the save before this runs, so an unusable row here means
+            // the alarm is switched off and the row was never validated. Skip it either way: the
+            // firmware would discard it on load.
+            if (days === '' || from === '' || to === '' || from === to) {
+                return;
+            }
+            alertWindows.push({ days: days, from: from, to: to });
+        });
+        return alertWindows;
+    }
+
+    function validateAlertWindows(alarmType) {
+        const error = $(`#alarm_${alarmType}_windows_error`);
+        const rows = $(`#alarm_${alarmType}_windows`).find('.alert-window');
+
+        if (!$(`#alarm_${alarmType}_enable`).is(':checked')) {
+            rows.removeClass('border border-danger rounded');
+            error.addClass('d-none').text('');
+            return true;
+        }
+
+        let firstProblem = '';
+        rows.each((_, element) => {
+            const row = $(element);
+            const from = row.find('.alert-window-from').val() || '';
+            const to = row.find('.alert-window-to').val() || '';
+
+            let problem = '';
+            if (row.find('.alert-window-day:checked').length === 0) {
+                problem = 'Choose at least one day for every alert window.';
+            } else if (from === '' || to === '') {
+                problem = 'Every alert window needs a start and an end time.';
+            } else if (from === to) {
+                problem = 'An alert window cannot start and end at the same time.';
+            }
+
+            row.toggleClass('border border-danger rounded', problem !== '');
+            if (problem !== '' && firstProblem === '') {
+                firstProblem = problem;
+            }
+        });
+
+        error.toggleClass('d-none', firstProblem === '').text(firstProblem);
+        return firstProblem === '';
+    }
+
+    // Alert windows replaced the fixed silence intervals. A clock that has not saved its settings
+    // since the upgrade still reports the old key, so translate it exactly as the firmware does.
+    function alertWindowsFromJson(json, alarmType) {
+        const configured = json[`alarm_${alarmType}_alert_windows`];
+        if (Array.isArray(configured)) {
+            return configured;
+        }
+
+        const silence = json[`alarm_${alarmType}_silence_interval`];
+        if (silence === '22_8') {
+            return [{ days: '0123456', from: '08:00', to: '22:00' }];
+        }
+        if (silence === '8_22') {
+            return [{ days: '0123456', from: '22:00', to: '08:00' }];
+        }
+        return [];
     }
 
     function addFocusOutValidationDropDown(fieldName) {
@@ -766,7 +923,7 @@
         const valueField = $(`#alarm_${alarmType}_value`);
         let isValid = validate(valueField, bgValidationPattternSelector());
         isValid &= validateDropDown($(`#alarm_${alarmType}_snooze`));
-        isValid &= validateDropDown($(`#alarm_${alarmType}_silence`));
+        isValid &= validateAlertWindows(alarmType);
         isValid &= validateRtttlField($(`#alarm_${alarmType}_melody`));
         return isValid;
     }
@@ -978,13 +1135,19 @@
         const melody = ($(`#alarm_${alarmType}_melody`).val() || "").trim();
         json[`alarm_${alarmType}_melody`] = melody;
 
+        // Written even for a disabled alarm so that turning one off and saving does not throw
+        // away the schedule the user built for it.
+        json[`alarm_${alarmType}_alert_windows`] = collectAlertWindows(alarmType);
+        // The saved form is the loaded configuration mutated in place, so the superseded key
+        // would otherwise ride along and could be migrated again if the windows were ever lost.
+        delete json[`alarm_${alarmType}_silence_interval`];
+
         if (!alarmEnabled) {
             return;
         }
 
         let alarmValue = $(`#alarm_${alarmType}_value`).val();
         const snooze = $(`#alarm_${alarmType}_snooze`).val();
-        const silence = $(`#alarm_${alarmType}_silence`).val();
 
         if ($('#bg_units').val() == 'mmol') {
             alarmValue = Math.round(parseFloat(alarmValue) * 18);
@@ -992,7 +1155,6 @@
 
         json[`alarm_${alarmType}_value`] = alarmValue;
         json[`alarm_${alarmType}_snooze_interval`] = snooze;
-        json[`alarm_${alarmType}_silence_interval`] = silence;
     }
 
     function uploadForm(json) {
@@ -1337,7 +1499,7 @@
         }
         $(`#alarm_${alarmType}_value`).val(alarmValue);
         $(`#alarm_${alarmType}_snooze`).val(json[`alarm_${alarmType}_snooze_interval`] || "");
-        $(`#alarm_${alarmType}_silence`).val(json[`alarm_${alarmType}_silence_interval`] || "");
+        renderAlertWindows(alarmType, alertWindowsFromJson(json, alarmType));
         $(`#alarm_${alarmType}_melody`).val(json[`alarm_${alarmType}_melody`] || "");
 
         changeAlarmState($(`#alarm_${alarmType}_enable`));
