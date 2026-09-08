@@ -26,8 +26,16 @@ struct RenderContext {
     tm currentTime;
     bool dataIsOld;
     bool wasDataOld;
+    bool dataIsEarlyStale;
+    bool wasDataEarlyStale;
     const std::list<GlucoseReading>& readings;
 };
+
+// True while a reading is old enough to warn about but not yet old enough to be called stale.
+// Free rather than a member because the render loop needs the same answer the faces do: this
+// state changes as time passes rather than when data arrives, so the screen has to be redrawn
+// when it changes.
+bool isReadingEarlyStale(const GlucoseReading& reading);
 
 class BGDisplayFace {
 public:
