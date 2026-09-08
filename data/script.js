@@ -959,6 +959,10 @@
         json['custom_nodatatimer_enable'] = $('#custom_nodatatimer_enable').is(':checked');
         json['custom_nodatatimer'] = $('#custom_nodatatimer').val();
         json['data_old_color'] = $('#data_old_color').val();
+        // This object starts as the config.json that was fetched, so anything already in the file
+        // is posted back untouched. stale_old_color is the pre-rename key the firmware still reads
+        // as a fallback, and leaving it here would put it back every time the page saved.
+        delete json['stale_old_color'];
 
         // Web interface authentication
         json['web_auth_enable'] = $('#web_auth_enable').is(':checked');
