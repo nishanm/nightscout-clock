@@ -82,6 +82,17 @@ JsonDocument* SettingsManager_::readConfigJsonFile() {
     }
 }
 
+// The three levels the web UI offers. Anything else means a hand written config, and rather than
+// guess at what was intended the alert falls back to the volume it has always played at.
+static int readAlarmVolume(JsonVariantConst configured) {
+    int volume = configured | DEFAULT_ALARM_VOLUME;
+    if (volume != ALARM_VOLUME_LOW && volume != ALARM_VOLUME_MEDIUM && volume != ALARM_VOLUME_HIGH) {
+        DEBUG_PRINTLN("Invalid alarm volume in config, falling back to the default");
+        return DEFAULT_ALARM_VOLUME;
+    }
+    return volume;
+}
+
 bool SettingsManager_::loadSettingsFromFile() {
     auto doc = readConfigJsonFile();
     if (doc == NULL)
@@ -207,6 +218,9 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.alarm_high_melody = (*doc)["alarm_high_melody"].as<String>();
     settings.alarm_low_melody = (*doc)["alarm_low_melody"].as<String>();
     settings.alarm_urgent_low_melody = (*doc)["alarm_urgent_low_melody"].as<String>();
+    settings.alarm_high_volume = readAlarmVolume((*doc)["alarm_high_volume"]);
+    settings.alarm_low_volume = readAlarmVolume((*doc)["alarm_low_volume"]);
+    settings.alarm_urgent_low_volume = readAlarmVolume((*doc)["alarm_urgent_low_volume"]);
     settings.alarm_intensive_mode = (*doc)["alarm_intensive_mode"].as<bool>();
 
     // Additional WiFi
@@ -348,6 +362,9 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["alarm_high_melody"] = settings.alarm_high_melody;
     (*doc)["alarm_low_melody"] = settings.alarm_low_melody;
     (*doc)["alarm_urgent_low_melody"] = settings.alarm_urgent_low_melody;
+    (*doc)["alarm_high_volume"] = settings.alarm_high_volume;
+    (*doc)["alarm_low_volume"] = settings.alarm_low_volume;
+    (*doc)["alarm_urgent_low_volume"] = settings.alarm_urgent_low_volume;
     (*doc)["alarm_intensive_mode"] = settings.alarm_intensive_mode;
 
     // Additional WiFi
