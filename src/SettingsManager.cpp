@@ -236,7 +236,7 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.data_old_color = displayColorFromString(
         (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
-    // Early stale indicator - a warning colour shown before the data-is-old threshold. A config
+    // Early stale indicator - a warning color shown before the data-is-old threshold. A config
     // written before this feature has none of these keys, and as<int>() on a missing key is 0,
     // not the 6 the header declares, so the threshold has to fall back explicitly.
     //
