@@ -7,10 +7,6 @@
 #include "globals.h"
 
 namespace {
-bool isValidAlarmRepeatInterval(int intervalSeconds) {
-    return intervalSeconds == 60 || intervalSeconds == 120 || intervalSeconds == 300;
-}
-
 bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
@@ -84,6 +80,10 @@ JsonDocument* SettingsManager_::readConfigJsonFile() {
         factoryReset();
         return NULL;
     }
+}
+
+bool SettingsManager_::isValidAlarmRepeatInterval(int intervalSeconds) {
+    return intervalSeconds == 60 || intervalSeconds == 120 || intervalSeconds == 300;
 }
 
 bool SettingsManager_::loadSettingsFromFile() {
