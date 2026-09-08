@@ -50,7 +50,7 @@
 #define COLOR_CYAN static_cast<uint16_t>(DISPLAY_COLOR::CYAN)
 #define COLOR_MAGENTA static_cast<uint16_t>(DISPLAY_COLOR::MAGENTA)
 
-// No BG_COLOR_OLD: the data-is-old colour is a setting now, read through
+// No BG_COLOR_OLD: the data-is-old color is a setting now, read through
 // BGDisplayFace::getDataOldColor() so every face and the "no data" screen agree.
 #define BG_COLOR_NORMAL COLOR_GREEN
 #define BG_COLOR_WARNING COLOR_YELLOW

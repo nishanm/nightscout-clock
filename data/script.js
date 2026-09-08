@@ -1322,7 +1322,7 @@
 
         // Same fallback chain the firmware uses: new key, then the pre-rename key, then gray.
         // Without the middle step this page shows gray for a config written before the rename,
-        // so a user who had configured blue would see the wrong colour and write gray back on
+        // so a user who had configured blue would see the wrong color and write gray back on
         // their next save - undoing the setting the firmware fallback exists to preserve.
         $('#data_old_color').val(json['data_old_color'] || json['stale_old_color'] || 'gray');
 

@@ -38,7 +38,7 @@ public:
     virtual void renderPartial(const RenderContext& ctx) const;
 
 protected:
-    // Colour for a reading past the data-is-old threshold, and for the "no data" screen.
+    // Color for a reading past the data-is-old threshold, and for the "no data" screen.
     // Configurable because the default gray is not visible at MIN_BRIGHTNESS.
     uint16_t getDataOldColor() const;
 };

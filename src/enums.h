@@ -72,13 +72,13 @@ enum class BRIGHTNES_MODE : uint8_t {
     AUTO_DIMMED = 101,
 };
 
-// Every colour the firmware draws with. The enum value IS the RGB565 code, so a DISPLAY_COLOR can
-// be used wherever a colour is expected without a lookup table, and the codes live in one place
+// Every color the firmware draws with. The enum value IS the RGB565 code, so a DISPLAY_COLOR can
+// be used wherever a color is expected without a lookup table, and the codes live in one place
 // rather than two.
 //
-// A note on GRAY, since it is why the data-is-old colour is configurable at all: 0xA514 is
+// A note on GRAY, since it is why the data-is-old color is configurable at all: 0xA514 is
 // (165, 162, 165) and no channel is at its maximum, so at MIN_BRIGHTNESS the panel cannot render
-// it and a stale reading disappears entirely. Every other colour here keeps at least one channel
+// it and a stale reading disappears entirely. Every other color here keeps at least one channel
 // at maximum. See BGDisplayFace::getDataOldColor().
 enum class DISPLAY_COLOR : uint16_t {
     BLACK = 0x0000,
@@ -176,7 +176,7 @@ inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR f
     return fallback;
 }
 
-// The colours a data-age setting may use. DISPLAY_COLOR lists every colour the firmware draws
+// The colors a data-age setting may use. DISPLAY_COLOR lists every color the firmware draws
 // with, which is deliberately wider than what these settings should accept: BLACK is invisible,
 // red, green and yellow are what the glucose bands mean, and white is what a fresh trend arrow
 // already uses, so any of them would make the age of a reading indistinguishable from its
