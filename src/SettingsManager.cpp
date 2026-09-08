@@ -39,15 +39,30 @@ String minutesAsTimeOfDay(int minutes) {
 }
 
 // Days are listed as tm_wday digits, so "12345" is Monday to Friday and "0123456" is every day.
-uint8_t parseAlertWindowDays(const String& value) {
-    uint8_t days = 0;
+// Returns false for anything else - an empty list, a stray character, a day listed twice - and
+// only then is days meaningful. Skipping what it cannot read would be worse here than refusing
+// it: "Mon1" would quietly become Monday alone, and a list that decides when an alarm may sound
+// has to mean exactly what it says. parseTimeOfDayMinutes below is strict for the same reason.
+bool parseAlertWindowDays(const String& value, uint8_t& days) {
+    days = 0;
+    if (value.length() == 0 || value.length() > 7) {
+        return false;
+    }
+
     for (unsigned int i = 0; i < value.length(); i++) {
         char day = value[i];
-        if (day >= '0' && day <= '6') {
-            days |= (uint8_t)(1 << (day - '0'));
+        if (day < '0' || day > '6') {
+            return false;
         }
+
+        uint8_t dayBit = (uint8_t)(1 << (day - '0'));
+        if (days & dayBit) {
+            return false;
+        }
+        days |= dayBit;
     }
-    return days;
+
+    return true;
 }
 
 String alertWindowDaysAsString(uint8_t days) {
@@ -72,14 +87,14 @@ std::vector<AlertWindow> readAlertWindows(JsonVariantConst configured) {
         }
 
         AlertWindow window;
-        window.days = parseAlertWindowDays(entry["days"].as<String>());
+        const bool daysAreReadable = parseAlertWindowDays(entry["days"].as<String>(), window.days);
         window.startMinutes = parseTimeOfDayMinutes(entry["from"].as<String>());
         window.endMinutes = parseTimeOfDayMinutes(entry["to"].as<String>());
 
-        // A window with no days, an unreadable time or no duration can never open. Dropping it
-        // here keeps the alarm evaluation free of special cases, and an alert window that cannot
-        // be understood must never end up silencing an alarm.
-        if (window.days == 0 || window.startMinutes < 0 || window.endMinutes < 0 ||
+        // A window with unreadable days, an unreadable time or no duration can never open.
+        // Dropping it here keeps the alarm evaluation free of special cases, and an alert window
+        // that cannot be understood must never end up silencing an alarm.
+        if (!daysAreReadable || window.startMinutes < 0 || window.endMinutes < 0 ||
             window.startMinutes == window.endMinutes) {
             DEBUG_PRINTLN("Ignoring an alert window that could never open");
             continue;
@@ -127,7 +142,10 @@ void writeAlertWindows(JsonDocument& doc, const char* windowsKey, const char* le
                        const std::vector<AlertWindow>& windows) {
     doc.remove(windowsKey);
     // The migration above only runs while the window list is absent, so the old key has to go or
-    // a stale silence interval could come back the next time this file is read.
+    // a stale silence interval could come back the next time this file is read. This makes the
+    // move one way: firmware old enough to predate windows would find neither key and alert at
+    // any time, which is the loud direction, but a schedule set here does not survive a
+    // downgrade.
     doc.remove(legacySilenceKey);
 
     JsonArray configured = doc[windowsKey].to<JsonArray>();
@@ -163,8 +181,10 @@ const char* SettingsManager_::validateAlertWindows(JsonVariantConst configured) 
         if (!entry.is<JsonObjectConst>()) {
             return "Every alert window must be an object";
         }
-        if (parseAlertWindowDays(entry["days"].as<String>()) == 0) {
-            return "Every alert window needs at least one day, given as digits where 0 is Sunday";
+        uint8_t days;
+        if (!parseAlertWindowDays(entry["days"].as<String>(), days)) {
+            return "Alert window days must be digits from 0 to 6 where 0 is Sunday, each used "
+                   "at most once";
         }
 
         int startMinutes = parseTimeOfDayMinutes(entry["from"].as<String>());
