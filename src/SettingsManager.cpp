@@ -7,6 +7,19 @@
 #include "globals.h"
 
 namespace {
+// Reads a colour for one of the data-age settings, refusing anything outside the set the WebUI
+// offers. An unusable colour falls back rather than failing the load, and says so, because a
+// setting that silently means something else is worse than one that visibly ignored you.
+DISPLAY_COLOR readDataAgeColor(const String& value, DISPLAY_COLOR fallback) {
+    DISPLAY_COLOR color = displayColorFromString(value, fallback);
+    if (!isDataAgeColor(color)) {
+        DEBUG_PRINTF("Data age colour \"%s\" is not one of the colours offered, ignoring it\n",
+                     value.c_str());
+        return fallback;
+    }
+    return color;
+}
+
 bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
@@ -241,9 +254,9 @@ bool SettingsManager_::loadSettingsFromFile() {
     // one colour the panel cannot render at MIN_BRIGHTNESS - the exact failure this setting
     // exists to escape, applied to the people who had already worked around it. Verified on a
     // TC001: without this, a device configured "blue" came back up blank after the update.
-    settings.data_old_color = displayColorFromString(
+    settings.data_old_color = readDataAgeColor(
         (*doc)["data_old_color"].as<String>(),
-        displayColorFromString((*doc)["stale_old_color"].as<String>(), DISPLAY_COLOR::GRAY));
+        readDataAgeColor((*doc)["stale_old_color"].as<String>(), DISPLAY_COLOR::GRAY));
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
@@ -374,6 +387,10 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
     (*doc)["data_old_color"] = toString(settings.data_old_color);
+    // stale_old_color was this setting's key before it was renamed, and loadSettingsFromFile still
+    // reads it so an existing config keeps its colour. Drop it once the new key has been written,
+    // or every config carries a second colour that no longer decides anything.
+    doc->remove("stale_old_color");
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;

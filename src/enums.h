@@ -176,6 +176,17 @@ inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR f
     return fallback;
 }
 
+// The colours a data-age setting may use. DISPLAY_COLOR lists every colour the firmware draws
+// with, which is deliberately wider than what these settings should accept: BLACK is invisible,
+// red, green and yellow are what the glucose bands mean, and white is what a fresh trend arrow
+// already uses, so any of them would make the age of a reading indistinguishable from its
+// severity. The WebUI offers exactly this list, and enforcing it here as well keeps a hand
+// written config from recreating the bug the setting exists to escape.
+inline bool isDataAgeColor(DISPLAY_COLOR color) {
+    return color == DISPLAY_COLOR::GRAY || color == DISPLAY_COLOR::BLUE ||
+           color == DISPLAY_COLOR::CYAN || color == DISPLAY_COLOR::MAGENTA;
+}
+
 inline String toString(BRIGHTNES_MODE mode) {
     switch (mode) {
         case BRIGHTNES_MODE::MANUAL:
