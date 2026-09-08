@@ -1035,14 +1035,16 @@
                                         </td>
                                     </tr>
                                 </table>
-                                <p class="text-muted small mb-0">
+                            </div>
+                        </div>
+                        <div class="row d-none" id="stale_early_settings">
+                            <div class="col-12">
+                                <p class="text-muted small">
                                     Colours the value and trend arrow once a reading is older than the time
                                     below, before it becomes fully stale. Useful on clock faces that have no
                                     age bars, such as Big text.
                                 </p>
                             </div>
-                        </div>
-                        <div class="row d-none" id="stale_early_settings">
                             <div class="col-6" id="stale_early_minutes_cell">
                                 <label for="stale_early_minutes" class="form-label">Early stale after (in
                                     minutes)</label>
@@ -1061,6 +1063,7 @@
                                 </select>
                             </div>
                         </div>
+                        <hr />
                         <div class="row">
                             <div class="col-6" id="data_old_color_cell">
                                 <label for="data_old_color" class="form-label">Colour when data is old</label>
