@@ -15,12 +15,18 @@ uint16_t BGDisplayFace::getDataOldColor() const {
     return static_cast<uint16_t>(SettingsManager.settings.data_old_color);
 }
 
+// True while a reading is old enough to warn about but not yet old enough to be called stale.
+// Both bounds are checked here rather than left to the caller: every face would otherwise have to
+// remember to test the fully-old state first, and one that forgot would show the early warning
+// colour on a reading that is actually stale -- the milder state winning over the worse one.
 bool BGDisplayFace::isEarlyStale(const GlucoseReading& reading) const {
     if (!SettingsManager.settings.stale_early_enable) {
         return false;
     }
 
-    return reading.getSecondsAgo() >= 60 * SettingsManager.settings.stale_early_minutes;
+    const int secondsAgo = reading.getSecondsAgo();
+    return secondsAgo >= 60 * SettingsManager.settings.stale_early_minutes &&
+           secondsAgo < 60 * SettingsManager.settings.bg_data_too_old_threshold_minutes;
 }
 
 uint16_t BGDisplayFace::getEarlyStaleColor() const {

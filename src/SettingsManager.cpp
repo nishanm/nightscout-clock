@@ -258,11 +258,19 @@ bool SettingsManager_::loadSettingsFromFile() {
         (*doc)["data_old_color"].as<String>(),
         readDataAgeColor((*doc)["stale_old_color"].as<String>(), DISPLAY_COLOR::GRAY));
 
-    // Early stale indicator - a warning colour shown before the data-is-old threshold
+    // Early stale indicator - a warning colour shown before the data-is-old threshold. A config
+    // written before this feature has none of these keys, and as<int>() on a missing key is 0,
+    // not the 6 the header declares, so the threshold has to fall back explicitly.
+    //
+    // isNull() is the test rather than operator|, which returns the default whenever is<T>() is
+    // false. The WebUI writes this field with .val(), so a real config holds the string "6", not
+    // the number 6 -- and "| 6" would quietly return 6 for every value a user had ever set.
+    // as<int>() parses the string, which is why it worked before and has to stay.
     settings.stale_early_enable = (*doc)["stale_early_enable"].as<bool>();
-    settings.stale_early_minutes = (*doc)["stale_early_minutes"].as<int>();
+    settings.stale_early_minutes =
+        (*doc)["stale_early_minutes"].isNull() ? 6 : (*doc)["stale_early_minutes"].as<int>();
     settings.stale_early_color =
-        displayColorFromString((*doc)["stale_early_color"].as<String>(), DISPLAY_COLOR::CYAN);
+        readDataAgeColor((*doc)["stale_early_color"].as<String>(), DISPLAY_COLOR::CYAN);
 
     // The warning only means anything strictly inside the data-is-old window, so it is checked
     // against the threshold resolved above rather than a constant. Below the minimum it would
