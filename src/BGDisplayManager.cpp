@@ -183,8 +183,9 @@ void BGDisplayManager_::tick() {
     maybeRrefreshScreen();
 }
 
-void BGDisplayManager_::commitRenderedState(bool dataIsOld) {
+void BGDisplayManager_::commitRenderedState(bool dataIsOld, bool dataIsEarlyStale) {
     lastRenderedDataWasOld = dataIsOld;
+    lastRenderedDataWasEarlyStale = dataIsEarlyStale;
     lastRefreshEpoch = ServerManager.getUtcEpoch();
 }
 
@@ -192,7 +193,15 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
     bool dataIsOld = displayedReadings.size() > 0 &&
                      displayedReadings.back().getSecondsAgo() >
                          60 * SettingsManager.settings.bg_data_too_old_threshold_minutes;
-    RenderContext ctx{reason, timeInfo, dataIsOld, lastRenderedDataWasOld, displayedReadings};
+    bool dataIsEarlyStale =
+        displayedReadings.size() > 0 && isReadingEarlyStale(displayedReadings.back());
+    RenderContext ctx{reason,
+                      timeInfo,
+                      dataIsOld,
+                      lastRenderedDataWasOld,
+                      dataIsEarlyStale,
+                      lastRenderedDataWasEarlyStale,
+                      displayedReadings};
 
     switch (currentFace->getRenderDecision(ctx)) {
         case RenderDecision::NONE:
@@ -200,7 +209,7 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
         case RenderDecision::PARTIAL:
             currentFace->renderPartial(ctx);
             DisplayManager.update();
-            commitRenderedState(dataIsOld);
+            commitRenderedState(dataIsOld, dataIsEarlyStale);
             return;
         case RenderDecision::FULL:
             DisplayManager.clearMatrix();
@@ -210,7 +219,7 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
                 currentFace->showNoData();
             }
             DisplayManager.update();
-            commitRenderedState(dataIsOld);
+            commitRenderedState(dataIsOld, dataIsEarlyStale);
             return;
     }
 }
