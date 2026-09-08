@@ -997,7 +997,10 @@
         json['custom_nodatatimer'] = $('#custom_nodatatimer').val();
         json['data_old_color'] = $('#data_old_color').val();
         json['stale_early_enable'] = $('#stale_early_enable').is(':checked');
-        json['stale_early_minutes'] = $('#stale_early_minutes').val();
+        // parseInt so the file holds a number, the way face_cycle_interval_seconds already does,
+        // rather than the string .val() returns. The || 6 is for the disabled-and-empty case:
+        // parseInt('') is NaN and JSON.stringify writes NaN as null.
+        json['stale_early_minutes'] = parseInt($('#stale_early_minutes').val()) || 6;
         json['stale_early_color'] = $('#stale_early_color').val();
 
         // Web interface authentication
