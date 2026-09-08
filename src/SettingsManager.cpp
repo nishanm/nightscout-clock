@@ -233,9 +233,17 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
 
-    // Colour used once the data is older than the threshold above, and for the "no data" screen
-    settings.data_old_color =
-        displayColorFromString((*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
+    // Colour used once the data is older than the threshold above, and for the "no data" screen.
+    //
+    // The fallback to stale_old_color is deliberate and load-bearing. That was this setting's
+    // key before it was renamed, so a config written by an earlier build carries it and no
+    // data_old_color. Defaulting straight to GRAY there would silently put that user back on the
+    // one colour the panel cannot render at MIN_BRIGHTNESS - the exact failure this setting
+    // exists to escape, applied to the people who had already worked around it. Verified on a
+    // TC001: without this, a device configured "blue" came back up blank after the update.
+    settings.data_old_color = displayColorFromString(
+        (*doc)["data_old_color"].as<String>(),
+        displayColorFromString((*doc)["stale_old_color"].as<String>(), DISPLAY_COLOR::GRAY));
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
