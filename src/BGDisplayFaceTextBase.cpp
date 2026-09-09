@@ -8,15 +8,22 @@
 void BGDisplayFaceTextBase::showReading(
     const GlucoseReading reading, int16_t x, int16_t y, TEXT_ALIGNMENT alignment, FONT_TYPE font,
     bool isOld) const {
-    String readingToDisplay = getPrintableReading(reading.sgv);
     // Fully old wins over early stale, which wins over the glucose band.
+    uint16_t color = getColorByBGValue(reading);
     if (isOld) {
-        DisplayManager.setTextColor(getDataOldColor());
+        color = getDataOldColor();
     } else if (isEarlyStale(reading)) {
-        DisplayManager.setTextColor(getEarlyStaleColor());
-    } else {
-        SetDisplayColorByBGValue(reading);
+        color = getEarlyStaleColor();
     }
+
+    showReadingInColor(reading, x, y, alignment, font, color);
+}
+
+void BGDisplayFaceTextBase::showReadingInColor(
+    const GlucoseReading reading, int16_t x, int16_t y, TEXT_ALIGNMENT alignment, FONT_TYPE font,
+    uint16_t color) const {
+    String readingToDisplay = getPrintableReading(reading.sgv);
+    DisplayManager.setTextColor(color);
 
     DisplayManager.setFont(font);
 
@@ -24,6 +31,10 @@ void BGDisplayFaceTextBase::showReading(
 }
 
 void BGDisplayFaceTextBase::SetDisplayColorByBGValue(const GlucoseReading& reading) const {
+    DisplayManager.setTextColor(getColorByBGValue(reading));
+}
+
+uint16_t BGDisplayFaceTextBase::getColorByBGValue(const GlucoseReading& reading) const {
     auto bgLevel = bgDisplayManager.getGlucoseIntervals().getBGLevel(reading.sgv);
     auto textColor = COLOR_GRAY;
 
@@ -41,7 +52,7 @@ void BGDisplayFaceTextBase::SetDisplayColorByBGValue(const GlucoseReading& readi
             break;
     }
 
-    DisplayManager.setTextColor(textColor);
+    return textColor;
 }
 
 String BGDisplayFaceTextBase::getPrintableReading(const int sgv) const {
@@ -107,6 +118,11 @@ void BGDisplayFaceTextBase::showTrendArrow(
         color = getEarlyStaleColor();
     }
 
+    showTrendArrowInColor(reading, x, y, color);
+}
+
+void BGDisplayFaceTextBase::showTrendArrowInColor(
+    const GlucoseReading reading, int16_t x, int16_t y, uint16_t color) const {
     DisplayManager.drawBitmap(x, y, glucoseTrendSymbols.at(reading.trend), 5, 5, color);
 }
 

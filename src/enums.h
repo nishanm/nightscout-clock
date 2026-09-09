@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 
+
 enum class BG_UNIT : uint8_t {
     MGDL = 0,
     MMOLL = 1,
@@ -90,6 +91,15 @@ enum class DISPLAY_COLOR : uint16_t {
     MAGENTA = 0xF81F,
     YELLOW = 0xFFE0,
     WHITE = 0xFFFF,
+};
+
+// The colours the night face will draw a reading in. Deliberately only these three: red,
+// yellow and green are the glucose band colours and would collide, and gray is invisible at
+// night brightness for the reason given above.
+enum class NIGHT_VALUE_COLOR : uint16_t {
+    WHITE = static_cast<uint16_t>(DISPLAY_COLOR::WHITE),
+    MAGENTA = static_cast<uint16_t>(DISPLAY_COLOR::MAGENTA),
+    BLUE = static_cast<uint16_t>(DISPLAY_COLOR::BLUE),
 };
 
 inline String toString(BG_TREND trend) {
@@ -246,6 +256,19 @@ inline String toString(BG_SOURCE source) {
             return "LIBRELINKUP";
         case BG_SOURCE::MEDTRUM:
             return "MEDTRUM";
+        default:
+            return "unknown";
+    }
+}
+
+inline String toString(NIGHT_VALUE_COLOR color) {
+    switch (color) {
+        case NIGHT_VALUE_COLOR::WHITE:
+            return "white";
+        case NIGHT_VALUE_COLOR::MAGENTA:
+            return "magenta";
+        case NIGHT_VALUE_COLOR::BLUE:
+            return "blue";
         default:
             return "unknown";
     }

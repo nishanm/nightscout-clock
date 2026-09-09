@@ -13,6 +13,7 @@
 #include "BGDisplayFaceGraph.h"
 #include "BGDisplayFaceGraphAndBG.h"
 #include "BGDisplayFaceSimple.h"
+#include "BGDisplayFaceSimpleDark.h"
 #include "BGDisplayFaceValueAndDiff.h"
 #include "BGSource.h"
 
@@ -81,9 +82,12 @@ private:
     bool faceCycleTimerStarted = false;
     unsigned long lastFaceCycleMillis = 0;
     std::vector<int> faceCycleFaces;
+    bool nightActive = false;
+    int faceBeforeNight = -1;
 
     void configureFaceCycle();
     void updateFaceCycle();
+    void updateNightMode();
     void resetFaceCycleTimer();
     void runRenderCycle(RenderReason reason, const tm& timeInfo);
     void commitRenderedState(bool dataIsOld, bool dataIsEarlyStale);

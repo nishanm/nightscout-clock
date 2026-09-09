@@ -6,6 +6,25 @@
 
 #include "globals.h"
 
+// "HH:MM" keeps config.json readable; anything malformed falls back rather than half-parsing.
+static int parseTimeOfDay(const String& value, int fallbackMinutes) {
+    int hours = 0;
+    int minutes = 0;
+    if (sscanf(value.c_str(), "%d:%d", &hours, &minutes) != 2) {
+        return fallbackMinutes;
+    }
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return fallbackMinutes;
+    }
+    return hours * 60 + minutes;
+}
+
+static String formatTimeOfDay(int minutesOfDay) {
+    char buffer[6];
+    sprintf(buffer, "%02d:%02d", (minutesOfDay / 60) % 24, minutesOfDay % 60);
+    return String(buffer);
+}
+
 namespace {
 // Reads a color for one of the data-age settings, refusing anything outside the set the WebUI
 // offers. An unusable color falls back rather than failing the load, and says so, because a
@@ -18,6 +37,19 @@ DISPLAY_COLOR readDataAgeColor(const String& value, DISPLAY_COLOR fallback) {
         return fallback;
     }
     return color;
+}
+
+// Only three colours are offered. Anything else - a hand-edited config, a key written by a
+// later version - falls back to white, which is the most legible of the three rather than
+// the dimmest, because an unreadable reading at night is the worse failure.
+static NIGHT_VALUE_COLOR parseNightValueColor(const String& value) {
+    if (value == "magenta") {
+        return NIGHT_VALUE_COLOR::MAGENTA;
+    }
+    if (value == "blue") {
+        return NIGHT_VALUE_COLOR::BLUE;
+    }
+    return NIGHT_VALUE_COLOR::WHITE;
 }
 
 bool isValidFaceCycleInterval(int intervalSeconds) {
@@ -133,7 +165,7 @@ bool SettingsManager_::loadSettingsFromFile() {
     }
 
     settings.face_cycle_faces.clear();
-    bool faceAlreadyAdded[6] = {};
+    bool faceAlreadyAdded[CLOCK_FACE_COUNT] = {};
     if ((*doc)["face_cycle_faces"].is<JsonArray>()) {
         for (JsonVariant face : (*doc)["face_cycle_faces"].as<JsonArray>()) {
             if (!face.is<int>()) {
@@ -141,16 +173,17 @@ bool SettingsManager_::loadSettingsFromFile() {
             }
 
             int faceId = face.as<int>();
-            if (faceId >= 0 && faceId < 6 && !faceAlreadyAdded[faceId]) {
+            if (faceId >= 0 && faceId < CLOCK_FACE_COUNT && !faceAlreadyAdded[faceId]) {
                 settings.face_cycle_faces.push_back(faceId);
                 faceAlreadyAdded[faceId] = true;
             }
         }
     }
     if (settings.face_cycle_faces.empty()) {
-        int fallbackFace = settings.default_clockface >= 0 && settings.default_clockface < 6
-                               ? settings.default_clockface
-                               : 0;
+        int fallbackFace =
+            settings.default_clockface >= 0 && settings.default_clockface < CLOCK_FACE_COUNT
+                ? settings.default_clockface
+                : 0;
         settings.face_cycle_faces.push_back(fallbackFace);
     }
     if (settings.face_cycle_enabled && settings.face_cycle_faces.size() < 2) {
@@ -234,6 +267,21 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.custom_hostname = (*doc)["custom_hostname"].as<String>();
 
     // Custom No Data Timer
+    settings.night_mode_enable = (*doc)["night_mode_enable"].as<bool>();
+    settings.night_start_minutes = parseTimeOfDay((*doc)["night_start"].as<String>(), 22 * 60);
+    settings.night_end_minutes = parseTimeOfDay((*doc)["night_end"].as<String>(), 7 * 60);
+    if ((*doc)["night_face"].isNull()) {
+        settings.night_face = -1;
+    } else {
+        settings.night_face = (*doc)["night_face"].as<int>();
+    }
+    settings.night_brightness_level = (*doc)["night_brightness_level"].as<int>();
+    if (settings.night_brightness_level < 1 || settings.night_brightness_level > 10) {
+        settings.night_brightness_level = 1;
+    }
+
+    settings.night_value_color = parseNightValueColor((*doc)["night_value_color"].as<String>());
+
     settings.custom_nodatatimer_enable = (*doc)["custom_nodatatimer_enable"].as<bool>();
     settings.custom_nodatatimer = (*doc)["custom_nodatatimer"].as<int>();
     if (settings.custom_nodatatimer_enable == true && settings.custom_nodatatimer > 5 &&
@@ -412,6 +460,13 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["custom_hostname"] = settings.custom_hostname;
 
     // Custom No Data Timer
+    (*doc)["night_mode_enable"] = settings.night_mode_enable;
+    (*doc)["night_start"] = formatTimeOfDay(settings.night_start_minutes);
+    (*doc)["night_end"] = formatTimeOfDay(settings.night_end_minutes);
+    (*doc)["night_face"] = settings.night_face;
+    (*doc)["night_brightness_level"] = settings.night_brightness_level;
+    (*doc)["night_value_color"] = toString(settings.night_value_color);
+
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
     (*doc)["data_old_color"] = toString(settings.data_old_color);

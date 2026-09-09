@@ -394,16 +394,16 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                     return;
                 }
 
-                bool selectedFaces[6] = {};
+                bool selectedFaces[CLOCK_FACE_COUNT] = {};
                 for (JsonVariant face : data["face_cycle_faces"].as<JsonArray>()) {
                     if (!face.is<int>()) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                        sendFaceCycleValidationError("Face selections must use valid clock face IDs");
                         return;
                     }
 
                     int faceId = face.as<int>();
-                    if (faceId < 0 || faceId >= 6) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                    if (faceId < 0 || faceId >= CLOCK_FACE_COUNT) {
+                        sendFaceCycleValidationError("Face selections must use valid clock face IDs");
                         return;
                     }
 
@@ -665,6 +665,16 @@ tm ServerManager_::getTimezonedTime() {
         DEBUG_PRINTLN("Failed to obtain time");
     }
     return timeinfo;
+}
+
+// getTimezonedTime() returns its struct tm whether or not the clock knows the time, which is
+// harmless for display but not for anything that gates behaviour on the hour. This reports the
+// failure instead. The default timeout is 0 so callers on the render path never block.
+bool ServerManager_::tryGetTimezonedTime(tm& timeinfo, uint32_t timeoutMs) {
+    if (!getLocalTime(&timeinfo, timeoutMs)) {
+        return false;
+    }
+    return true;
 }
 
 void ServerManager_::stop() {

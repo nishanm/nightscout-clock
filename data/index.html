@@ -1063,6 +1063,93 @@
                                 </select>
                             </div>
                         </div>
+                        <hr />
+                        <div class="row">
+                            <div class="col-12">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" value=""
+                                                    id="night_mode_enable" />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <h5>Night mode</h5>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div class="form-text">
+                                    Between the start and end times below, the clock shows the face you
+                                    select here and limits how bright the display can get. Outside those
+                                    hours your normal face and brightness are used, and nothing is
+                                    limited. An end time earlier than the start runs overnight.
+                                    <br /><br />
+                                    <strong>Brightness at night is a ceiling, not a fixed level.</strong>
+                                    Whichever brightness mode you use, manual or automatic, the display
+                                    will not go above this setting while the window is open. If automatic
+                                    brightness would already be dimmer than the ceiling, it stays dimmer.
+                                    <br /><br />
+                                    The display cannot go below brightness 1, so beyond that the
+                                    difference comes from the face itself: faces vary widely in how many
+                                    pixels they light, and white costs three times a single colour.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1 d-none" id="night_mode_settings">
+                            <div class="col-6 col-md-3">
+                                <label for="night_start" class="form-label">Starts at</label>
+                                <input type="time" class="form-control" id="night_start" required />
+                                <div class="invalid-feedback">
+                                    A valid time is required
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="night_end" class="form-label">Ends at</label>
+                                <input type="time" class="form-control" id="night_end" required />
+                                <div class="invalid-feedback">
+                                    A valid time is required
+                                </div>
+                                <div class="form-text">
+                                    An end earlier than the start runs overnight.
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="night_face" class="form-label">Face at night</label>
+                                <select class="form-select" id="night_face">
+                                    <option value="-1">Keep my normal face</option>
+                                    <option value="0">Simple</option>
+                                    <option value="1">Full glucose graph</option>
+                                    <option value="2">Glucose graph and value</option>
+                                    <option value="3">Big text</option>
+                                    <option value="4">Value and delta</option>
+                                    <option value="5">Current time and BG value</option>
+                                    <option value="6">Simple (dark)</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3 d-none" id="night_value_color_settings">
+                                <label for="night_value_color" class="form-label">Reading at night</label>
+                                <select class="form-select" id="night_value_color" disabled>
+                                    <option value="white">White &mdash; easiest to read</option>
+                                    <option value="magenta">Magenta &mdash; dimmer</option>
+                                    <option value="blue">Blue &mdash; dimmest, hardest to read</option>
+                                </select>
+                                <div class="form-text">
+                                    The reading is drawn in this one colour, so it never lights up
+                                    red or green. The trend arrow shows low / in-range / high
+                                    instead.
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="night_brightness_level" class="form-label">Brightness at night</label>
+                                <input type="range" class="form-range" min="1" max="10" step="1"
+                                    id="night_brightness_level" />
+                                <div class="form-text">
+                                    Applies whichever brightness mode is set. <span
+                                        id="night_brightness_value">1</span> of 10.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <br />
