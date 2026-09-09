@@ -1137,6 +1137,7 @@
         setAlarmDataToJson(json, 'low');
         setAlarmDataToJson(json, 'urgent_low');
         json['alarm_intensive_mode'] = $('#alarm_intensive_mode').is(':checked');
+        json['alarm_repeat_interval_seconds'] = parseInt($('#alarm_repeat_interval_seconds').val());
 
         // Additional WiFi
         json['additional_wifi_enable'] = $('#additional_wifi_enable').is(':checked');
@@ -1503,6 +1504,7 @@
         loadAlarmDataFromJson(json, 'low');
         loadAlarmDataFromJson(json, 'urgent_low');
         $('#alarm_intensive_mode').prop('checked', json['alarm_intensive_mode']);
+        $('#alarm_repeat_interval_seconds').val(json['alarm_repeat_interval_seconds'] || 300);
 
         // Additional WiFi
         $('#additional_wifi_enable').prop('checked', json['additional_wifi_enable']);

@@ -449,6 +449,19 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 }
             }
 
+            // An unsupported repeat interval is corrected on the next load, so the file would be
+            // accepted and then quietly mean something else. Refuse it here instead, and ask
+            // SettingsManager which values it accepts rather than restating the list.
+            if (!data["alarm_repeat_interval_seconds"].isNull()) {
+                if (!data["alarm_repeat_interval_seconds"].is<int>() ||
+                    !SettingsManager_::isValidAlarmRepeatInterval(
+                        data["alarm_repeat_interval_seconds"].as<int>())) {
+                    sendSaveValidationError(
+                        "Alarm repeat interval must be 60, 120, or 300 seconds");
+                    return;
+                }
+            }
+
             if (SettingsManager.trySaveJsonAsSettings(data)) {
                 request->send(200, "application/json", "{\"status\": \"ok\"}");
             } else {

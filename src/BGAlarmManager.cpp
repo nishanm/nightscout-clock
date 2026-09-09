@@ -6,7 +6,6 @@
 #include "ServerManager.h"
 #include "globals.h"
 
-#define ALARM_REPEAT_INTERVAL_SECONDS 300
 #define ALARM_REPEAT_INTERVAL_INTENSIVE_SECONDS 2
 
 static String pickAlarmMelody(const String& customMelody, const String& fallbackMelody) {
@@ -71,7 +70,7 @@ void BGAlarmManager_::setup() {
     if (SettingsManager.settings.alarm_intensive_mode) {
         alarmIntervalSeconds = ALARM_REPEAT_INTERVAL_INTENSIVE_SECONDS;  // repeat every 2 seconds
     } else {
-        alarmIntervalSeconds = ALARM_REPEAT_INTERVAL_SECONDS;
+        alarmIntervalSeconds = SettingsManager.settings.alarm_repeat_interval_seconds;
     }
 }
 

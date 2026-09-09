@@ -80,6 +80,7 @@ public:
     int stale_early_minutes = 6;
     DISPLAY_COLOR stale_early_color = DISPLAY_COLOR::CYAN;
     bool alarm_intensive_mode;
+    int alarm_repeat_interval_seconds = 300;
     bool web_auth_enable;
     String web_auth_password;
 };
