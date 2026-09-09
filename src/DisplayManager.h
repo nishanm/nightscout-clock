@@ -35,6 +35,8 @@ public:
     void selectButtonLong();
     void setPower(bool power);
     void setBrightness(int bri);
+    bool isNightModeActive();
+    int brightnessForLevel(int level);
     void update();
     void clearMatrixPart(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
     float getTextWidth(const char* text, byte textCase);
