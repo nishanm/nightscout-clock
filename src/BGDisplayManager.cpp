@@ -161,7 +161,7 @@ void BGDisplayManager_::resetFaceCycleTimer() {
 }
 
 void BGDisplayManager_::updateFaceCycle() {
-    if (!faceCycleActive) {
+    if (!faceCycleActive || nightActive) {
         return;
     }
 
@@ -185,9 +185,43 @@ void BGDisplayManager_::updateFaceCycle() {
 }
 
 void BGDisplayManager_::tick() {
+    updateNightMode();
     updateFaceCycle();
     maybeRrefreshScreen();
 }
+
+// Swap to the night face when the window opens and back when it closes.
+//
+// Only the transitions are acted on, which is what lets a deliberate button press stand: a face
+// chosen by hand inside the window keeps until the window ends. The boundary also re-applies
+// brightness and forces a redraw, because on a five minute CGM cadence waiting for new data would
+// leave the wrong face lit for minutes.
+void BGDisplayManager_::updateNightMode() {
+    const bool night = DisplayManager.isNightModeActive();
+    if (night == nightActive) {
+        return;
+    }
+    nightActive = night;
+
+    if (night) {
+        faceBeforeNight = currentFaceIndex;
+        int target = SettingsManager.settings.night_face;
+        if (target < 0 || static_cast<size_t>(target) >= faces.size()) {
+            target = SettingsManager.settings.default_clockface;
+        }
+        DEBUG_PRINTF("Night mode on, switching to face %d", target);
+        setFace(target);
+    } else {
+        int target = faceBeforeNight >= 0 && static_cast<size_t>(faceBeforeNight) < faces.size()
+                         ? faceBeforeNight
+                         : SettingsManager.settings.default_clockface;
+        DEBUG_PRINTF("Night mode off, restoring face %d", target);
+        setFace(target);
+    }
+
+    DisplayManager.applySettings();
+}
+
 
 void BGDisplayManager_::commitRenderedState(bool dataIsOld, bool dataIsEarlyStale) {
     lastRenderedDataWasOld = dataIsOld;
@@ -208,6 +242,7 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
                       dataIsEarlyStale,
                       lastRenderedDataWasEarlyStale,
                       displayedReadings};
+
 
     switch (currentFace->getRenderDecision(ctx)) {
         case RenderDecision::NONE:

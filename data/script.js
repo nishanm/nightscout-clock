@@ -69,6 +69,8 @@
         $('#custom_hostname_enable').on('change', toggleCustomHostnameSettings);
         $('#custom_nodatatimer_enable').on('change', toggleCustomNoDataSettings);
         $('#stale_early_enable').on('change', toggleStaleEarlySettings);
+        $('#night_mode_enable').on('change', toggleNightModeSettings);
+        $('#night_brightness_level').on('input', showNightBrightness);
         $('#web_auth_enable').on('change', toggleWebAuthSettings);
         $('#face_cycle_enabled').on('change', toggleFaceCycleSettings);
         $('.face-cycle-face').on('change', validateFaceCycleSelection);
@@ -139,6 +141,13 @@
         if (!isChecked) {
             clearValidationStatus('stale_early_minutes');
         }
+    function toggleNightModeSettings() {
+        const isChecked = $('#night_mode_enable').is(':checked');
+        $('#night_mode_settings').toggleClass('d-none', !isChecked);
+    }
+
+    function showNightBrightness() {
+        $('#night_brightness_value').text($('#night_brightness_level').val());
     }
 
     function toggleWebAuthSettings() {
@@ -1199,6 +1208,13 @@
         json['stale_early_minutes'] = parseInt($('#stale_early_minutes').val()) || 6;
         json['stale_early_color'] = $('#stale_early_color').val();
 
+        // Nighttime display
+        json['night_mode_enable'] = $('#night_mode_enable').is(':checked');
+        json['night_start'] = $('#night_start').val();
+        json['night_end'] = $('#night_end').val();
+        json['night_face'] = parseInt($('#night_face').val(), 10);
+        json['night_brightness_level'] = parseInt($('#night_brightness_level').val(), 10);
+
         // Web interface authentication
         json['web_auth_enable'] = $('#web_auth_enable').is(':checked');
         const webAuthPasswordInput = ($('#web_auth_password').val() || "").trim();
@@ -1574,6 +1590,18 @@
             : $('#stale_early_minutes').val(6);
         $('#stale_early_color').val(json['stale_early_color'] || 'cyan');
         toggleStaleEarlySettings();
+        // Nighttime display
+        $('#night_mode_enable').prop('checked', json['night_mode_enable'] === true);
+        $('#night_start').val(/^\d{2}:\d{2}$/.test(json['night_start']) ? json['night_start'] : '22:00');
+        $('#night_end').val(/^\d{2}:\d{2}$/.test(json['night_end']) ? json['night_end'] : '07:00');
+        const nightFace = parseInt(json['night_face'], 10);
+        $('#night_face').val(isNaN(nightFace) ? -1 : nightFace);
+        const nightBrightness = parseInt(json['night_brightness_level'], 10);
+        $('#night_brightness_level').val(
+            isNaN(nightBrightness) || nightBrightness < 1 || nightBrightness > 10 ? 1 : nightBrightness);
+
+        showNightBrightness();
+        toggleNightModeSettings();
 
         // Web interface authentication
         webAuthPassword = json['web_auth_password'] || "";
