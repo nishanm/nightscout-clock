@@ -14,13 +14,16 @@
 // Two consequences drive the code below. Asking for a dimmer colour does nothing. And gray is
 // dim white, so COLOR_GRAY renders as black - which is why the stale state here is signalled
 // with cyan rather than the BG_COLOR_OLD the daytime faces use.
+//
+// There are no age blocks. Dropping them is the rest of the light saving, and it also means
+// nothing on this face changes between readings, so it never repaints on a clock tick - the
+// inherited render decision only asks for a redraw when the reading goes stale.
 
 void BGDisplayFaceSimpleDark::showReadings(
     const std::list<GlucoseReading>& readings, bool dataIsOld) const {
     auto lastReading = readings.back();
 
-    // Stale takes the whole face - value, arrow and bars. Any cyan on this face means the
-    // reading has stopped updating.
+    // Stale takes the whole face. Any cyan here means the reading has stopped updating.
     showReadingInColor(
         lastReading, 0, 6, TEXT_ALIGNMENT::CENTER, FONT_TYPE::MEDIUM,
         dataIsOld ? COLOR_CYAN : getValueColor());
@@ -29,18 +32,6 @@ void BGDisplayFaceSimpleDark::showReadings(
     // it never lights red or green, and the arrow carries it instead at a fraction of the cost.
     showTrendArrowInColor(
         lastReading, MATRIX_WIDTH - 5, 1, dataIsOld ? COLOR_CYAN : getColorByBGValue(lastReading));
-
-    drawTimerBlocks(lastReading, MATRIX_WIDTH, 0, 7);
-}
-
-// Blue is the cheapest colour on the panel, so keeping the age readout costs very little once
-// the blocks are not green. Deleting them was never buying much.
-uint16_t BGDisplayFaceSimpleDark::getTimerBlockColor(const GlucoseReading& lastReading) const {
-    const int secondsAgo = lastReading.getSecondsAgo();
-    if (secondsAgo >= 60 * SettingsManager.settings.bg_data_too_old_threshold_minutes) {
-        return COLOR_CYAN;
-    }
-    return COLOR_BLUE;
 }
 
 void BGDisplayFaceSimpleDark::showNoData() const {
@@ -50,23 +41,6 @@ void BGDisplayFaceSimpleDark::showNoData() const {
     DisplayManager.setFont(FONT_TYPE::MEDIUM);
     DisplayManager.setTextColor(getValueColor());
     DisplayManager.printText(0, 6, "No data", TEXT_ALIGNMENT::CENTER, 0);
-}
-
-// The age blocks advance once a minute. Repainting the whole face for that would redraw the
-// value and the arrow every minute all night, so only row 7 is cleared and redrawn - the same
-// trick BGDisplayFaceClock uses for its clock region. The stale transition still repaints in
-// full, because BGDisplayFaceWithAge::getRenderDecision returns FULL when dataIsOld flips.
-RenderDecision BGDisplayFaceSimpleDark::getAgeTickRenderDecision() const {
-    return RenderDecision::PARTIAL;
-}
-
-void BGDisplayFaceSimpleDark::renderPartial(const RenderContext& ctx) const {
-    if (ctx.readings.empty()) {
-        return;
-    }
-
-    DisplayManager.clearMatrixPart(0, 7, MATRIX_WIDTH, 1);
-    drawTimerBlocks(ctx.readings.back(), MATRIX_WIDTH, 0, 7);
 }
 
 uint16_t BGDisplayFaceSimpleDark::getValueColor() const {

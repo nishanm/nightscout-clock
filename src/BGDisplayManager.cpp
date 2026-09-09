@@ -49,10 +49,9 @@ void BGDisplayManager_::setup() {
     faces.push_back(new BGDisplayFaceClock());
     facesNames[5] = "Clock and value";
 
-    // Night faces are registered after the ordinary ones so ids 0..DAY_FACE_COUNT-1 keep
-    // meaning exactly what they meant before. This one is reachable only through the night
-    // mode face picker: it is absent from the default-face dropdown and the cycling
-    // checkboxes, and the manual rotation below stops before it.
+    // Registered last so the existing face ids keep their meaning. It is offered by the night
+    // mode picker and reachable with the buttons like any other face, but it is deliberately
+    // not in the default-face dropdown or the cycling checkboxes.
     faces.push_back(new BGDisplayFaceSimpleDark());
     facesNames[6] = "Simple (dark)";
 
@@ -126,10 +125,8 @@ void BGDisplayManager_::setFace(int id) {
 
 void BGDisplayManager_::showNextFace() {
     if (!faceCycleActive) {
-        // The rotation covers the day faces only, so a button press never lands on a night
-        // face, and a press inside the night window leaves for an ordinary one.
         int nextFaceIndex = currentFaceIndex + 1;
-        if (nextFaceIndex >= DAY_FACE_COUNT) {
+        if (static_cast<size_t>(nextFaceIndex) >= faces.size()) {
             nextFaceIndex = 0;
         }
         setFace(nextFaceIndex);
@@ -149,8 +146,8 @@ void BGDisplayManager_::showNextFace() {
 void BGDisplayManager_::showPreviousFace() {
     if (!faceCycleActive) {
         int previousFaceIndex = currentFaceIndex - 1;
-        if (previousFaceIndex < 0 || previousFaceIndex >= DAY_FACE_COUNT) {
-            previousFaceIndex = DAY_FACE_COUNT - 1;
+        if (previousFaceIndex < 0) {
+            previousFaceIndex = static_cast<int>(faces.size()) - 1;
         }
         setFace(previousFaceIndex);
         return;

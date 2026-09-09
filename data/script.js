@@ -72,6 +72,8 @@
         $('#night_mode_enable').on('change', toggleNightModeSettings);
         $('#night_brightness_level').on('input', showNightBrightness);
         $('#night_face').on('change', toggleNightValueColorSettings);
+        $('#default_clock_face').on('change', toggleNightValueColorSettings);
+        $('.face-cycle-face').on('change', toggleNightValueColorSettings);
         $('#web_auth_enable').on('change', toggleWebAuthSettings);
         $('#face_cycle_enabled').on('change', toggleFaceCycleSettings);
         $('.face-cycle-face').on('change', validateFaceCycleSelection);
@@ -152,10 +154,15 @@
     // Faces built for the dark are the only ones that read this setting, so the control is
     // hidden for the rest. Disabled as well as hidden, matching toggleFaceCycleSettings.
     function toggleNightValueColorSettings() {
-        const nightVariantFaces = [6];
-        const isNightFace = nightVariantFaces.includes(parseInt($('#night_face').val(), 10));
-        $('#night_value_color_settings').toggleClass('d-none', !isNightFace);
-        $('#night_value_color').prop('disabled', !isNightFace);
+        const darkFaces = [6];
+        const selected = face => darkFaces.includes(parseInt(face, 10));
+        // The setting belongs to the face, not to night mode, so the control follows the face
+        // wherever it is chosen - the night picker, the default face, or the cycle.
+        const usesDarkFace = selected($('#night_face').val())
+            || selected($('#default_clock_face').val())
+            || $('.face-cycle-face:checked').toArray().some(el => selected(el.value));
+        $('#night_value_color_settings').toggleClass('d-none', !usesDarkFace);
+        $('#night_value_color').prop('disabled', !usesDarkFace);
     }
 
     function showNightBrightness() {
@@ -1527,7 +1534,7 @@
         $('#brightness_level').val(json['brightness_level']);
         $('#default_clock_face').val(json['default_face']);
 
-        const availableFaces = [0, 1, 2, 3, 4, 5];
+        const availableFaces = [0, 1, 2, 3, 4, 5, 6];
         const defaultFace = Number(json['default_face']);
         const fallbackFace = availableFaces.includes(defaultFace) ? defaultFace : 0;
         const configuredFaces = Array.isArray(json['face_cycle_faces'])
