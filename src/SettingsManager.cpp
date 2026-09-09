@@ -263,6 +263,8 @@ bool SettingsManager_::loadSettingsFromFile() {
         settings.night_brightness_level = 1;
     }
 
+    settings.night_value_color = displayColorFromString((*doc)["night_value_color"].as<String>(), DISPLAY_COLOR::WHITE);
+
     settings.custom_nodatatimer_enable = (*doc)["custom_nodatatimer_enable"].as<bool>();
     settings.custom_nodatatimer = (*doc)["custom_nodatatimer"].as<int>();
     if (settings.custom_nodatatimer_enable == true && settings.custom_nodatatimer > 5 &&
@@ -410,6 +412,7 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["night_end"] = formatTimeOfDay(settings.night_end_minutes);
     (*doc)["night_face"] = settings.night_face;
     (*doc)["night_brightness_level"] = settings.night_brightness_level;
+    (*doc)["night_value_color"] = toString(settings.night_value_color);
 
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;

@@ -16,6 +16,13 @@ protected:
         const GlucoseReading reading, int16_t x, int16_t y, TEXT_ALIGNMENT alignment, FONT_TYPE fontType,
         bool isOld = false) const;
     void SetDisplayColorByBGValue(const GlucoseReading& reading) const;
+    // Colour-explicit variants, for a face that decides the colour itself rather than taking
+    // the glucose band. The band-coloured calls above are these with the band passed in.
+    uint16_t getColorByBGValue(const GlucoseReading& reading) const;
+    void showReadingInColor(
+        const GlucoseReading reading, int16_t x, int16_t y, TEXT_ALIGNMENT alignment, FONT_TYPE fontType,
+        uint16_t color) const;
+    void showTrendArrowInColor(const GlucoseReading reading, int16_t x, int16_t y, uint16_t color) const;
     String getPrintableReading(const int sgv) const;
 };
 

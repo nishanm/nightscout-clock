@@ -1061,6 +1061,19 @@
                                     <option value="-1">Keep my normal face</option>
                                 </select>
                             </div>
+                            <div class="col-12 col-md-3 d-none" id="night_value_color_settings">
+                                <label for="night_value_color" class="form-label">Reading at night</label>
+                                <select class="form-select" id="night_value_color" disabled>
+                                    <option value="white">White &mdash; easiest to read</option>
+                                    <option value="magenta">Magenta &mdash; dimmer</option>
+                                    <option value="blue">Blue &mdash; dimmest, hardest to read</option>
+                                </select>
+                                <div class="form-text">
+                                    The reading is drawn in this one colour, so it never lights up
+                                    red or green. The trend arrow shows low / in-range / high
+                                    instead.
+                                </div>
+                            </div>
                             <div class="col-12 col-md-3">
                                 <label for="night_brightness_level" class="form-label">Brightness at night</label>
                                 <input type="range" class="form-range" min="1" max="10" step="1"
