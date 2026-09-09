@@ -62,6 +62,11 @@ public:
     int custom_nodatatimer;
     int bg_data_too_old_threshold_minutes = 20;
     bool alarm_intensive_mode;
+    bool night_mode_enable = false;
+    int night_start_minutes = 22 * 60;  // minutes since midnight
+    int night_end_minutes = 7 * 60;     // earlier than start means the window wraps midnight
+    int night_face = -1;                // -1 keeps the current face and only caps brightness
+    int night_brightness_level = 1;
     bool web_auth_enable;
     String web_auth_password;
 };

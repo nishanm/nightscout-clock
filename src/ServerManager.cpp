@@ -667,6 +667,16 @@ tm ServerManager_::getTimezonedTime() {
     return timeinfo;
 }
 
+// getTimezonedTime() returns its struct tm whether or not the clock knows the time, which is
+// harmless for display but not for anything that gates behaviour on the hour. This reports the
+// failure instead. The default timeout is 0 so callers on the render path never block.
+bool ServerManager_::tryGetTimezonedTime(tm& timeinfo, uint32_t timeoutMs) {
+    if (!getLocalTime(&timeinfo, timeoutMs)) {
+        return false;
+    }
+    return true;
+}
+
 void ServerManager_::stop() {
     ws->end();
     delete ws;
