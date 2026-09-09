@@ -84,6 +84,7 @@ private:
     std::vector<int> faceCycleFaces;
     bool nightActive = false;
     int faceBeforeNight = -1;
+    bool faceSwappedForNight = false;
 
     void configureFaceCycle();
     void updateFaceCycle();

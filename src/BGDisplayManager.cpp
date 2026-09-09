@@ -210,19 +210,32 @@ void BGDisplayManager_::updateNightMode() {
     nightActive = night;
 
     if (night) {
-        faceBeforeNight = currentFaceIndex;
-        int target = SettingsManager.settings.night_face;
-        if (target < 0 || static_cast<size_t>(target) >= faces.size()) {
-            target = SettingsManager.settings.default_clockface;
+        // night_face -1 means keep whatever is on screen and only cap the brightness, so the
+        // face is left alone. An id that is out of range is a broken config rather than a
+        // request, and falls back to the default face.
+        const int configured = SettingsManager.settings.night_face;
+        if (configured < 0) {
+            DEBUG_PRINTLN("Night mode on, keeping the current face");
+        } else {
+            faceBeforeNight = currentFaceIndex;
+            faceSwappedForNight = true;
+            int target = static_cast<size_t>(configured) < faces.size()
+                             ? configured
+                             : SettingsManager.settings.default_clockface;
+            DEBUG_PRINTF("Night mode on, switching to face %d", target);
+            setFace(target);
         }
-        DEBUG_PRINTF("Night mode on, switching to face %d", target);
-        setFace(target);
-    } else {
+    } else if (faceSwappedForNight) {
+        // Only undo a swap this code made. Restoring unconditionally would drag the user off a
+        // face they chose by hand during the window.
+        faceSwappedForNight = false;
         int target = faceBeforeNight >= 0 && static_cast<size_t>(faceBeforeNight) < faces.size()
                          ? faceBeforeNight
                          : SettingsManager.settings.default_clockface;
         DEBUG_PRINTF("Night mode off, restoring face %d", target);
         setFace(target);
+    } else {
+        DEBUG_PRINTLN("Night mode off, face was never swapped");
     }
 
     DisplayManager.applySettings();
@@ -247,7 +260,6 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
                       dataIsEarlyStale,
                       lastRenderedDataWasEarlyStale,
                       displayedReadings};
-
 
     switch (currentFace->getRenderDecision(ctx)) {
         case RenderDecision::NONE:
