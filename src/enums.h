@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 
+#include "globals.h"
+
 enum class BG_UNIT : uint8_t {
     MGDL = 0,
     MMOLL = 1,
@@ -70,6 +72,16 @@ enum class BRIGHTNES_MODE : uint8_t {
     MANUAL = 0,
     AUTO_LINEAR = 100,
     AUTO_DIMMED = 101,
+};
+
+// The colours the night face will draw a reading in. The enum value IS the RGB565 code, so
+// nothing has to map between the setting and the panel. Deliberately only these three: red,
+// yellow and green are the glucose band colours and would collide, and gray is invisible at
+// night brightness because no channel of it survives gamma.
+enum class NIGHT_VALUE_COLOR : uint16_t {
+    WHITE = COLOR_WHITE,
+    MAGENTA = COLOR_MAGENTA,
+    BLUE = COLOR_BLUE,
 };
 
 inline String toString(BG_TREND trend) {
@@ -158,6 +170,19 @@ inline String toString(BG_SOURCE source) {
             return "LIBRELINKUP";
         case BG_SOURCE::MEDTRUM:
             return "MEDTRUM";
+        default:
+            return "unknown";
+    }
+}
+
+inline String toString(NIGHT_VALUE_COLOR color) {
+    switch (color) {
+        case NIGHT_VALUE_COLOR::WHITE:
+            return "white";
+        case NIGHT_VALUE_COLOR::MAGENTA:
+            return "magenta";
+        case NIGHT_VALUE_COLOR::BLUE:
+            return "blue";
         default:
             return "unknown";
     }

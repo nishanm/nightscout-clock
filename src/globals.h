@@ -27,9 +27,13 @@
 #define DEBUG_PRINTF(format, ...)
 #endif
 
-// How many clock faces BGDisplayManager registers. Face ids are validated against this both in
-// the settings API and when loading a config, so this must be updated when a face is added.
-#define CLOCK_FACE_COUNT 6
+// How many clock faces BGDisplayManager registers, and how many of those are ordinary day
+// faces. Night faces are registered last, so ids DAY_FACE_COUNT..CLOCK_FACE_COUNT-1 are the
+// night-only ones. They are valid to select for night mode, but the manual rotation and the
+// default-face picker stop at DAY_FACE_COUNT. Ids are validated against CLOCK_FACE_COUNT in
+// the settings API and when loading a config, so both must be updated when a face is added.
+#define CLOCK_FACE_COUNT 7
+#define DAY_FACE_COUNT 6
 #define CONFIG_JSON "/config.json"
 #define CONFIG_JSON_FACTORY "/config_initial.json"
 #define WIFI_CONNECT_TIMEOUT 15000
@@ -48,6 +52,7 @@
 #define COLOR_BLACK 0x0000
 #define COLOR_BLUE 0x001F
 #define COLOR_CYAN 0x07FF
+#define COLOR_MAGENTA 0xF81F
 
 #define BG_COLOR_OLD COLOR_GRAY
 #define BG_COLOR_NORMAL COLOR_GREEN

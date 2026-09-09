@@ -26,6 +26,19 @@ static String formatTimeOfDay(int minutesOfDay) {
 }
 
 namespace {
+// Only three colours are offered. Anything else - a hand-edited config, a key written by a
+// later version - falls back to white, which is the most legible of the three rather than
+// the dimmest, because an unreadable reading at night is the worse failure.
+static NIGHT_VALUE_COLOR parseNightValueColor(const String& value) {
+    if (value == "magenta") {
+        return NIGHT_VALUE_COLOR::MAGENTA;
+    }
+    if (value == "blue") {
+        return NIGHT_VALUE_COLOR::BLUE;
+    }
+    return NIGHT_VALUE_COLOR::WHITE;
+}
+
 bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
@@ -154,10 +167,10 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
     if (settings.face_cycle_faces.empty()) {
-        int fallbackFace = settings.default_clockface >= 0 &&
-                                   settings.default_clockface < CLOCK_FACE_COUNT
-                               ? settings.default_clockface
-                               : 0;
+        int fallbackFace =
+            settings.default_clockface >= 0 && settings.default_clockface < CLOCK_FACE_COUNT
+                ? settings.default_clockface
+                : 0;
         settings.face_cycle_faces.push_back(fallbackFace);
     }
     if (settings.face_cycle_enabled && settings.face_cycle_faces.size() < 2) {
@@ -253,6 +266,8 @@ bool SettingsManager_::loadSettingsFromFile() {
     if (settings.night_brightness_level < 1 || settings.night_brightness_level > 10) {
         settings.night_brightness_level = 1;
     }
+
+    settings.night_value_color = parseNightValueColor((*doc)["night_value_color"].as<String>());
 
     settings.custom_nodatatimer_enable = (*doc)["custom_nodatatimer_enable"].as<bool>();
     settings.custom_nodatatimer = (*doc)["custom_nodatatimer"].as<int>();
@@ -397,6 +412,7 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["night_end"] = formatTimeOfDay(settings.night_end_minutes);
     (*doc)["night_face"] = settings.night_face;
     (*doc)["night_brightness_level"] = settings.night_brightness_level;
+    (*doc)["night_value_color"] = toString(settings.night_value_color);
 
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
