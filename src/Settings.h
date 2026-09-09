@@ -72,6 +72,7 @@ public:
     int night_face = -1;                // -1 keeps the current face and only caps brightness
     int night_brightness_level = 1;
     NIGHT_VALUE_COLOR night_value_color = NIGHT_VALUE_COLOR::WHITE;
+    int alarm_repeat_interval_seconds = 300;
     bool web_auth_enable;
     String web_auth_password;
 };
