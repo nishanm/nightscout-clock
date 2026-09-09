@@ -20,6 +20,19 @@ ServerManager_& ServerManager_::getInstance() {
     return instance;
 }
 
+static byte resolveAlarmVolume(const String& alarmType) {
+    if (alarmType == "high") {
+        return (byte)SettingsManager.settings.alarm_high_volume;
+    }
+    if (alarmType == "low") {
+        return (byte)SettingsManager.settings.alarm_low_volume;
+    }
+    if (alarmType == "urgent_low") {
+        return (byte)SettingsManager.settings.alarm_urgent_low_volume;
+    }
+    return DEFAULT_ALARM_VOLUME;
+}
+
 static String resolveAlarmMelody(const String& alarmType) {
     if (alarmType == "high") {
         if (SettingsManager.settings.alarm_high_melody.length() > 0) {
@@ -493,7 +506,13 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 return;
             }
 
-            PeripheryManager.playRTTTLString(melody);
+            int volume = data["volume"] | DEFAULT_ALARM_VOLUME;
+            if (volume < 0 || volume > 255) {
+                request->send(400, "application/json", "{\"status\": \"volume must be 0-255\"}");
+                return;
+            }
+
+            PeripheryManager.playRTTTLString(melody, (byte)volume);
             request->send(200, "application/json", "{\"status\": \"ok\"}");
         }));
 
@@ -515,7 +534,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                     return;
                 }
 
-                PeripheryManager.playRTTTLString(melody);
+                PeripheryManager.playRTTTLString(melody, resolveAlarmVolume(alarmType));
 
                 request->send(200, "application/json", "{\"status\": \"ok\"}");
             } else {
