@@ -90,12 +90,7 @@ void DisplayManager_::applySettings() {
     int displayBrightness = 70;
 
     if (SettingsManager.settings.brightness_mode == BRIGHTNES_MODE::MANUAL) {
-        // make brightness grow logarithmically
-        float t = constrain(SettingsManager.settings.brightness_level / 10.0f, 0.0f, 1.0f);
-        const float gamma = 2.2f;       // raise to 2.4–2.6 for darker lows
-        float curved = powf(t, gamma);  // 0..1, biased toward 0
-
-        displayBrightness = (int)lroundf(MIN_BRIGHTNESS + curved * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
+        displayBrightness = brightnessForLevel(SettingsManager.settings.brightness_level);
     }
 
 #ifdef DEBUG_BRIGHTNESS
@@ -246,7 +241,67 @@ void DisplayManager_::drawPixel(uint8_t x, uint8_t y, uint16_t color, bool updat
     }
 }
 
+// make brightness grow logarithmically
+int DisplayManager_::brightnessForLevel(int level) {
+    float t = constrain(level / 10.0f, 0.0f, 1.0f);
+    const float gamma = 2.2f;
+    float curved = powf(t, gamma);  // 0..1, biased toward 0
+    return (int)lroundf(MIN_BRIGHTNESS + curved * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
+}
+
+// Is the clock inside its night window right now?
+//
+// Answered from the wall clock, so it needs a time the device actually has: an unset clock must
+// NOT be treated as night, or an NTP failure would dim the panel and leave it dim. Cached for a
+// second because the auto-brightness loop asks every 100 ms.
+bool DisplayManager_::isNightModeActive() {
+    static unsigned long lastCheckMillis = 0;
+    static bool cached = false;
+    static bool everChecked = false;
+
+    unsigned long now = millis();
+    if (everChecked && now - lastCheckMillis < 1000) {
+        return cached;
+    }
+    lastCheckMillis = now;
+    everChecked = true;
+    cached = false;
+
+    const auto& settings = SettingsManager.settings;
+    if (!settings.night_mode_enable) {
+        return cached;
+    }
+    // An empty window means off, not all day
+    if (settings.night_start_minutes == settings.night_end_minutes) {
+        return cached;
+    }
+
+    struct tm timeinfo;
+    if (!ServerManager.tryGetTimezonedTime(timeinfo)) {
+        return cached;
+    }
+
+    const int minuteOfDay = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+    if (settings.night_start_minutes < settings.night_end_minutes) {
+        cached = minuteOfDay >= settings.night_start_minutes &&
+                 minuteOfDay < settings.night_end_minutes;
+    } else {
+        // wraps midnight
+        cached = minuteOfDay >= settings.night_start_minutes ||
+                 minuteOfDay < settings.night_end_minutes;
+    }
+    return cached;
+}
+
 void DisplayManager_::setBrightness(int bri) {
+    // One chokepoint for both the manual path and the auto-brightness loop
+    if (bri > 0 && isNightModeActive()) {
+        const int cap = brightnessForLevel(SettingsManager.settings.night_brightness_level);
+        if (bri > cap) {
+            bri = cap;
+        }
+    }
+
     if (MATRIX_OFF) {
         matrix->setBrightness(0);
         currentBrightness = 0;
