@@ -18,6 +18,8 @@ public:
     bool loadSettingsFromFile();
     bool saveSettingsToFile();
     bool trySaveJsonAsSettings(JsonDocument doc);
+    // Returns NULL when the alert window list is usable, otherwise why it is not.
+    static const char* validateAlertWindows(JsonVariantConst configured);
     void factoryReset();
     // The alarm repeat intervals the WebUI offers. Public so the save endpoint can hold a posted
     // value to the same set the loader does, rather than restating it.
