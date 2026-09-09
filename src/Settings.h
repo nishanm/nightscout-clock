@@ -68,6 +68,7 @@ public:
     int night_end_minutes = 7 * 60;     // earlier than start means the window wraps midnight
     int night_face = -1;                // -1 keeps the current face and only caps brightness
     int night_brightness_level = 1;
+    DISPLAY_COLOR night_value_color = DISPLAY_COLOR::WHITE;
     bool web_auth_enable;
     String web_auth_password;
 };
