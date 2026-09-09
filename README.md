@@ -23,7 +23,7 @@ _Nightscout Clock (or NSClock) is an open-source product aimed at helping caregi
 
 ## Here is what it can do
 
-- 6 colorful clockfaces
+- 7 colorful clockfaces
 - Can get glucose data from Dexcom Share, Nightscout, LibreLink Up or Medtrum EasyFollow
 - Supports mg/dl and mmol/l
 - 10 minutes setup through web browser
@@ -67,6 +67,7 @@ Nightscout Clock is a custom firmware for Ulanzi TC001. It can also run (with mi
 | --------------- | ---------------------------------------------------------------------------------------------------- |---------|
 | Simple          | <img width="500" alt="Simple" src="https://github.com/user-attachments/assets/ad281e9f-8c7f-41ff-ba82-23c634171158" /> |   Horizontal bars in the bottom of the display <br /> indicate the time since the last reading <br />No bars: less than one minute <br /> 1..5 green bars: 1..5 minutes <br /> 5 yellow bars: 6..20 minutes <br /> gray-colored value and vars: 20+ minutes       |
 | BIG DIGITS      | <img width="500" alt="Big Digits" src="https://github.com/user-attachments/assets/1feae65b-21e9-4c20-8960-b75583baa142" /> |         |
+| Big text (night) |  | Night-time variant of "BIG DIGITS".<br />The value is always drawn in a very dim neutral white,<br />so the display does not light up a dark room.<br />The trend arrow carries the band color<br />(red / yellow / green), so the face still shows<br />low, in-range or high at a glance.<br />A dim, colorless arrow means the data is too old.<br /><br />It is listed together with all the other faces,<br />so it can be selected as the default face<br />or included in automatic cycling |
 | 3-hours graph   | <img width="500" alt="graph" src="https://github.com/user-attachments/assets/45d92097-f459-44d4-b1ae-a35c3cb38700" /> |         |
 | Graph and value | <img width="500" alt="Graph and value" src="https://github.com/user-attachments/assets/db9046aa-5121-43fa-b367-807cdf3c5ef3" /> |  The dots on the right side replace the trend arrow.<br>2 white dots = horizontal arrow.<br>2 colored dots (white + green) = 45° arrow.<br>3 dots = vertical arrow.<br>4 dots = double arrow.<br>Colored dots above = upward trend.<br>Colored dots below = downward trend. <br /><br /> Dots under the value are the same as <br /> horizontal bars on the other faces.<br /> See "Simple" face for details |
 | Delta           | <img width="500" alt="Photo of the Nightscout Clock" src="https://github.com/user-attachments/assets/f8005f49-6e32-43f1-bd84-0bb4e4691d7f" /> |         |
@@ -114,6 +115,7 @@ While cycling is enabled, the left and right buttons move only between the selec
   - BIG DIGITS
   - Value, trend and delta
   - Clock and BG value (timezone is set in the clock's web interface)
+  - Big text (night): BIG DIGITS dimmed for a dark room, with the trend arrow in the band color
 - Changes color to gray if the data is too old
 - Smart data and screen update timings: read data once it appears, refresh screen when needed
 - API data source. The clock has a simple Nightscout-like API which can receive glucose values from an external source. The main purpose of this feature is the ability to test the clock during the clockfaces development. In order to activate this feature, select the API data source within the clock's Web UI. Here are the endpoints:
@@ -133,6 +135,10 @@ While cycling is enabled, the left and right buttons move only between the selec
   - ...more... (if you are the author of a CGM data collecting app/service and you want your data to be displayed on the Nightscout Clock, please contact me)
 
 ## Changes
+
+### 0.31
+
+- Added the "Big text (night)" clock face: the BIG DIGITS layout with the value in a very dim neutral white and the trend arrow colored by the glucose band
 
 ### 0.30
 

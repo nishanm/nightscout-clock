@@ -9,6 +9,7 @@
 
 #include "BGDisplayFace.h"
 #include "BGDisplayFaceBigText.h"
+#include "BGDisplayFaceBigTextNight.h"
 #include "BGDisplayFaceClock.h"
 #include "BGDisplayFaceGraph.h"
 #include "BGDisplayFaceGraphAndBG.h"

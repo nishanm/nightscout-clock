@@ -45,11 +45,18 @@
 #define COLOR_BLACK 0x0000
 #define COLOR_BLUE 0x001F
 #define COLOR_CYAN 0x07FF
+// Neutral white at about 13% of the full brightness. It is the dimmest color the matrix can
+// still render legibly and it does not collide with any color that carries a meaning
+#define COLOR_DIM_WHITE 0x2104
 
 #define BG_COLOR_OLD COLOR_GRAY
 #define BG_COLOR_NORMAL COLOR_GREEN
 #define BG_COLOR_WARNING COLOR_YELLOW
 #define BG_COLOR_URGENT COLOR_RED
+#define BG_COLOR_NIGHT COLOR_DIM_WHITE
+
+// Number of clock faces registered in BGDisplayManager_::setup(). Keep in sync when adding a face
+#define CLOCK_FACE_COUNT 7
 
 extern bool BLOCK_NAVIGATION;
 extern float TEMP_OFFSET;

@@ -36,6 +36,7 @@ void BGDisplayManager_::setup() {
     glucoseIntervals.addInterval(
         SettingsManager.settings.bg_high_urgent_limit, 401, BG_LEVEL::URGENT_HIGH);
 
+    // Keep CLOCK_FACE_COUNT in globals.h in sync with the number of faces registered below
     faces.push_back(new BGDisplayFaceSimple());
     facesNames[0] = "Simple";
     faces.push_back(new BGDisplayFaceGraph());
@@ -48,6 +49,8 @@ void BGDisplayManager_::setup() {
     facesNames[4] = "Value and diff";
     faces.push_back(new BGDisplayFaceClock());
     facesNames[5] = "Clock and value";
+    faces.push_back(new BGDisplayFaceBigTextNight());
+    facesNames[6] = "Big text (night)";
 
     configureFaceCycle();
 

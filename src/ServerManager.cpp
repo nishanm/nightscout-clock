@@ -394,16 +394,18 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                     return;
                 }
 
-                bool selectedFaces[6] = {};
+                static const char* invalidFaceIdError = "Face selections must use IDs from 0 to 6";
+
+                bool selectedFaces[CLOCK_FACE_COUNT] = {};
                 for (JsonVariant face : data["face_cycle_faces"].as<JsonArray>()) {
                     if (!face.is<int>()) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                        sendFaceCycleValidationError(invalidFaceIdError);
                         return;
                     }
 
                     int faceId = face.as<int>();
-                    if (faceId < 0 || faceId >= 6) {
-                        sendFaceCycleValidationError("Face selections must use IDs from 0 to 5");
+                    if (faceId < 0 || faceId >= CLOCK_FACE_COUNT) {
+                        sendFaceCycleValidationError(invalidFaceIdError);
                         return;
                     }
 

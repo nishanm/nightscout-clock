@@ -1252,7 +1252,7 @@
         $('#brightness_level').val(json['brightness_level']);
         $('#default_clock_face').val(json['default_face']);
 
-        const availableFaces = [0, 1, 2, 3, 4, 5];
+        const availableFaces = [0, 1, 2, 3, 4, 5, 6];
         const defaultFace = Number(json['default_face']);
         const fallbackFace = availableFaces.includes(defaultFace) ? defaultFace : 0;
         const configuredFaces = Array.isArray(json['face_cycle_faces'])
