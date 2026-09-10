@@ -716,10 +716,21 @@ tm ServerManager_::getTimezonedTime() {
 // harmless for display but not for anything that gates behaviour on the hour. This reports the
 // failure instead. The default timeout is 0 so callers on the render path never block.
 bool ServerManager_::tryGetTimezonedTime(tm& timeinfo, uint32_t timeoutMs) {
-    if (!getLocalTime(&timeinfo, timeoutMs)) {
-        return false;
+    if (timeoutMs == 0) {
+        // Deliberately not getLocalTime() here. Its wait loop is bounded by
+        // `while ((millis() - start) <= ms)`, so with ms == 0 the body is skipped entirely
+        // whenever the millisecond counter ticks between those two reads, and it reports an
+        // unknown time on a clock that is perfectly well synced. Measured on hardware: that
+        // happened on roughly one call in ten, which is enough to let an alarm through a
+        // schedule that should have silenced it. Reading the clock directly is what a zero
+        // timeout was always meant to mean - check once, never block.
+        time_t now;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        return timeinfo.tm_year > (2016 - 1900);
     }
-    return true;
+
+    return getLocalTime(&timeinfo, timeoutMs);
 }
 
 void ServerManager_::stop() {
