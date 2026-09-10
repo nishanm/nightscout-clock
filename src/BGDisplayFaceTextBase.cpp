@@ -82,6 +82,14 @@ const uint8_t symbol_empty[] PROGMEM = {
     0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+// Drawn in the arrow's place once the reading is too old to act on. A cross rather than a
+// dimmed arrow because the two states differ in kind, not in degree: the panel is not showing
+// a weaker trend, it has no idea what the trend is. Nine lit pixels, the same as the arrow it
+// replaces, which matters on a panel read in the dark where lit channels are the budget.
+const uint8_t symbol_noData[] PROGMEM = {
+    0x88, 0x50, 0x20, 0x50, 0x88,
+};
+
 const std::map<BG_TREND, const uint8_t*> glucoseTrendSymbols = {
     {BG_TREND::NONE, symbol_empty},
     {BG_TREND::DOUBLE_UP, symbol_doubleUp},
@@ -97,12 +105,23 @@ const std::map<BG_TREND, const uint8_t*> glucoseTrendSymbols = {
 
 void BGDisplayFaceTextBase::showTrendArrow(
     const GlucoseReading reading, int16_t x, int16_t y, bool dataIsOld) const {
-    uint16_t color = COLOR_WHITE;
+    // Past the threshold the arrow was only recoloured, so the face kept drawing a confident
+    // direction for a reading it had already given up on - a claim about the present that the
+    // clock cannot support. showTrendVerticalLine() below already refuses to do that, blanking
+    // the trend outright when dataIsOld. This is the same rule for the faces that draw the 5x5
+    // arrow, except that the slot is filled with a mark rather than left empty, so the state is
+    // asserted rather than merely missing.
+    //
+    // The mark stays white while the value takes the data-is-old colour. That is deliberate:
+    // the value's colour says "this number is stale", and it is the one thing on the panel that
+    // is allowed to be hard to read. The mark says "there is no current reading at all", which
+    // has to survive the colour and the brightness that the value does not.
     if (dataIsOld) {
-        color = getDataOldColor();
+        DisplayManager.drawBitmap(x, y, symbol_noData, 5, 5, COLOR_WHITE);
+        return;
     }
 
-    DisplayManager.drawBitmap(x, y, glucoseTrendSymbols.at(reading.trend), 5, 5, color);
+    DisplayManager.drawBitmap(x, y, glucoseTrendSymbols.at(reading.trend), 5, 5, COLOR_WHITE);
 }
 
 #pragma endregion Show arrow
