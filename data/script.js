@@ -154,7 +154,7 @@
     // Faces built for the dark are the only ones that read this setting, so the control is
     // hidden for the rest. Disabled as well as hidden, matching toggleFaceCycleSettings.
     function toggleNightValueColorSettings() {
-        const darkFaces = [6];
+        const darkFaces = [6, 7];
         const selected = face => darkFaces.includes(parseInt(face, 10));
         // The setting belongs to the face, not to night mode, so the control follows the face
         // wherever it is chosen - the night picker, the default face, or the cycle.
@@ -1534,7 +1534,10 @@
         $('#brightness_level').val(json['brightness_level']);
         $('#default_clock_face').val(json['default_face']);
 
-        const availableFaces = [0, 1, 2, 3, 4, 5, 6];
+        // Read the ids off the checkboxes instead of repeating them. As a literal this was a
+        // second copy of the face list that had to be edited in lockstep with the markup, and
+        // forgetting it fails quietly: the new face just comes back unchecked on the next load.
+        const availableFaces = $('.face-cycle-face').toArray().map(el => Number(el.value));
         const defaultFace = Number(json['default_face']);
         const fallbackFace = availableFaces.includes(defaultFace) ? defaultFace : 0;
         const configuredFaces = Array.isArray(json['face_cycle_faces'])
