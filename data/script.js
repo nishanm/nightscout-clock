@@ -64,6 +64,11 @@
         $('#additional_wifi_enable').on('change', toggleAdditionalWifiSettings);
         $('#custom_hostname_enable').on('change', toggleCustomHostnameSettings);
         $('#custom_nodatatimer_enable').on('change', toggleCustomNoDataSettings);
+        $('#night_mode_enable').on('change', toggleNightModeSettings);
+        $('#night_brightness_level').on('input', showNightBrightness);
+        $('#night_face').on('change', toggleNightValueColorSettings);
+        $('#default_clock_face').on('change', toggleNightValueColorSettings);
+        $('.face-cycle-face').on('change', toggleNightValueColorSettings);
         $('#web_auth_enable').on('change', toggleWebAuthSettings);
         $('#face_cycle_enabled').on('change', toggleFaceCycleSettings);
         $('.face-cycle-face').on('change', validateFaceCycleSelection);
@@ -118,6 +123,29 @@
     function toggleCustomNoDataSettings() {
         const isChecked = $('#custom_nodatatimer_enable').is(':checked');
         $('#custom_nodatatimer_settings').toggleClass('d-none', !isChecked);
+    }
+
+    function toggleNightModeSettings() {
+        const isChecked = $('#night_mode_enable').is(':checked');
+        $('#night_mode_settings').toggleClass('d-none', !isChecked);
+    }
+
+    // Faces built for the dark are the only ones that read this setting, so the control is
+    // hidden for the rest. Disabled as well as hidden, matching toggleFaceCycleSettings.
+    function toggleNightValueColorSettings() {
+        const darkFaces = [6];
+        const selected = face => darkFaces.includes(parseInt(face, 10));
+        // The setting belongs to the face, not to night mode, so the control follows the face
+        // wherever it is chosen - the night picker, the default face, or the cycle.
+        const usesDarkFace = selected($('#night_face').val())
+            || selected($('#default_clock_face').val())
+            || $('.face-cycle-face:checked').toArray().some(el => selected(el.value));
+        $('#night_value_color_settings').toggleClass('d-none', !usesDarkFace);
+        $('#night_value_color').prop('disabled', !usesDarkFace);
+    }
+
+    function showNightBrightness() {
+        $('#night_brightness_value').text($('#night_brightness_level').val());
     }
 
     function toggleWebAuthSettings() {
@@ -958,6 +986,15 @@
          // Custom No Data Timer
         json['custom_nodatatimer_enable'] = $('#custom_nodatatimer_enable').is(':checked');
         json['custom_nodatatimer'] = $('#custom_nodatatimer').val();
+        json['data_old_color'] = $('#data_old_color').val();
+
+        // Nighttime display
+        json['night_mode_enable'] = $('#night_mode_enable').is(':checked');
+        json['night_start'] = $('#night_start').val();
+        json['night_end'] = $('#night_end').val();
+        json['night_face'] = parseInt($('#night_face').val(), 10);
+        json['night_brightness_level'] = parseInt($('#night_brightness_level').val(), 10);
+        json['night_value_color'] = $('#night_value_color').val();
 
         // Web interface authentication
         json['web_auth_enable'] = $('#web_auth_enable').is(':checked');
@@ -1252,7 +1289,7 @@
         $('#brightness_level').val(json['brightness_level']);
         $('#default_clock_face').val(json['default_face']);
 
-        const availableFaces = [0, 1, 2, 3, 4, 5];
+        const availableFaces = [0, 1, 2, 3, 4, 5, 6];
         const defaultFace = Number(json['default_face']);
         const fallbackFace = availableFaces.includes(defaultFace) ? defaultFace : 0;
         const configuredFaces = Array.isArray(json['face_cycle_faces'])
@@ -1314,6 +1351,24 @@
             : $('#custom_nodatatimer').val();
 
         toggleCustomNoDataSettings();
+
+        $('#data_old_color').val(json['data_old_color'] || 'gray');
+
+        // Nighttime display
+        $('#night_mode_enable').prop('checked', json['night_mode_enable'] === true);
+        $('#night_start').val(/^\d{2}:\d{2}$/.test(json['night_start']) ? json['night_start'] : '22:00');
+        $('#night_end').val(/^\d{2}:\d{2}$/.test(json['night_end']) ? json['night_end'] : '07:00');
+        const nightFace = parseInt(json['night_face'], 10);
+        $('#night_face').val(isNaN(nightFace) ? -1 : nightFace);
+        const nightBrightness = parseInt(json['night_brightness_level'], 10);
+        $('#night_brightness_level').val(
+            isNaN(nightBrightness) || nightBrightness < 1 || nightBrightness > 10 ? 1 : nightBrightness);
+
+        showNightBrightness();
+        $('#night_value_color').val(json['night_value_color'] || 'white');
+
+        toggleNightValueColorSettings();
+        toggleNightModeSettings();
 
         // Web interface authentication
         webAuthPassword = json['web_auth_password'] || "";

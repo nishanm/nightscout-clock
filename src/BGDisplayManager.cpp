@@ -49,6 +49,16 @@ void BGDisplayManager_::setup() {
     faces.push_back(new BGDisplayFaceClock());
     facesNames[5] = "Clock and value";
 
+    // Registered last so the existing face ids keep their meaning.
+    faces.push_back(new BGDisplayFaceSimpleDark());
+    facesNames[6] = "Simple (dark)";
+
+    if (faces.size() != CLOCK_FACE_COUNT) {
+        DEBUG_PRINTF(
+            "Face count mismatch: %u registered, CLOCK_FACE_COUNT is %d",
+            static_cast<unsigned int>(faces.size()), CLOCK_FACE_COUNT);
+    }
+
     configureFaceCycle();
 
     if (faceCycleActive) {
@@ -155,7 +165,7 @@ void BGDisplayManager_::resetFaceCycleTimer() {
 }
 
 void BGDisplayManager_::updateFaceCycle() {
-    if (!faceCycleActive) {
+    if (!faceCycleActive || nightActive) {
         return;
     }
 
@@ -179,8 +189,48 @@ void BGDisplayManager_::updateFaceCycle() {
 }
 
 void BGDisplayManager_::tick() {
+    updateNightMode();
     updateFaceCycle();
     maybeRrefreshScreen();
+}
+
+// Swap faces only on the window transitions, so a face chosen by hand inside the window stays;
+// re-apply brightness and redraw at the boundary rather than wait for the next reading.
+void BGDisplayManager_::updateNightMode() {
+    const bool night = DisplayManager.isNightModeActive();
+    if (night == nightActive) {
+        return;
+    }
+    nightActive = night;
+
+    if (night) {
+        // night_face -1 keeps the current face; an out-of-range id falls back to the default face.
+        const int configured = SettingsManager.settings.night_face;
+        if (configured < 0) {
+            DEBUG_PRINTLN("Night mode on, keeping the current face");
+        } else {
+            faceBeforeNight = currentFaceIndex;
+            faceSwappedForNight = true;
+            int target = static_cast<size_t>(configured) < faces.size()
+                             ? configured
+                             : SettingsManager.settings.default_clockface;
+            DEBUG_PRINTF("Night mode on, switching to face %d", target);
+            setFace(target);
+        }
+    } else if (faceSwappedForNight) {
+        // Only undo a swap this code made. Restoring unconditionally would drag the user off a
+        // face they chose by hand during the window.
+        faceSwappedForNight = false;
+        int target = faceBeforeNight >= 0 && static_cast<size_t>(faceBeforeNight) < faces.size()
+                         ? faceBeforeNight
+                         : SettingsManager.settings.default_clockface;
+        DEBUG_PRINTF("Night mode off, restoring face %d", target);
+        setFace(target);
+    } else {
+        DEBUG_PRINTLN("Night mode off, face was never swapped");
+    }
+
+    DisplayManager.applySettings();
 }
 
 void BGDisplayManager_::commitRenderedState(bool dataIsOld) {
