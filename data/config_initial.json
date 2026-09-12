@@ -63,6 +63,7 @@
     "night_end": "07:00",
     "night_face": -1,
     "night_brightness_level": 1,
+    "night_value_color": "white",
     "web_auth_enable": false,
     "web_auth_password": ""
 }

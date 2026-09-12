@@ -49,9 +49,7 @@ void BGDisplayManager_::setup() {
     faces.push_back(new BGDisplayFaceClock());
     facesNames[5] = "Clock and value";
 
-    // Registered last so the existing face ids keep their meaning. It is offered by the night
-    // mode picker and reachable with the buttons like any other face, but it is deliberately
-    // not in the default-face dropdown or the cycling checkboxes.
+    // Registered last so the existing face ids keep their meaning.
     faces.push_back(new BGDisplayFaceSimpleDark());
     facesNames[6] = "Simple (dark)";
 

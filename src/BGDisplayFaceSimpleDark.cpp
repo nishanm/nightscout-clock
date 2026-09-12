@@ -3,21 +3,8 @@
 #include "SettingsManager.h"
 #include "globals.h"
 
-// Why this face exists, and why it cannot just draw the usual colours darker:
-//
-// Colour reaches the panel as RGB565, through the Framebuffer_GFX gamma tables, into FastLED,
-// which scales by (v * (1 + brightness)) >> 8. At the brightness night mode caps to, a channel
-// needs to survive gamma to emit at all, and everything that survives lands on the same single
-// PWM step. So there is no brightness axis left at the pixel level, only a channel axis: every
-// pixel is off, or lit on some combination of red, green and blue.
-//
-// Two consequences drive the code below. Asking for a dimmer colour does nothing. And gray is
-// dim white, so COLOR_GRAY renders as black - which is why the stale state here is signalled
-// with cyan rather than the BG_COLOR_OLD the daytime faces use.
-//
-// There are no age blocks. Dropping them is the rest of the light saving, and it also means
-// nothing on this face changes between readings, so it never repaints on a clock tick - the
-// inherited render decision only asks for a redraw when the reading goes stale.
+// At night brightness a pixel is either lit or not, so this face saves light by lighting
+// fewer channels: one value colour, the glucose band on the arrow only, cyan when stale.
 
 void BGDisplayFaceSimpleDark::showReadings(
     const std::list<GlucoseReading>& readings, bool dataIsOld) const {
