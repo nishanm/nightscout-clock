@@ -2,10 +2,8 @@
 
 void BGDisplayFace::showNoData() const {
     DisplayManager.clearMatrix();
-    // The font has to be set, not inherited. showReading() sets it per face, so without this the
-    // no-data screen draws in whichever font the last reading used - and on Big text that is
-    // FONT_TYPE::LARGE, which renders "No data" far wider than the 32px panel and clips it to
-    // "O DAT". The coordinates below are the ones the Simple face uses with MEDIUM.
+    // Reset the font because the previous face may have left LARGE selected,
+    // which makes "No data" too wide for the panel.
     DisplayManager.setFont(FONT_TYPE::MEDIUM);
     DisplayManager.setTextColor(getDataOldColor());
     DisplayManager.printText(0, 6, "No data", TEXT_ALIGNMENT::CENTER, 0);

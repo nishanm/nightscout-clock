@@ -70,6 +70,7 @@ void BGDisplayFaceClock::showClock() const {
     snprintf(minute, sizeof(minute), "%02d", timeinfo.tm_min);
 
     DisplayManager.setTextColor(COLOR_WHITE);
+    DisplayManager.setFont(FONT_TYPE::MEDIUM);
     DisplayManager.printText(0, 6, hour, TEXT_ALIGNMENT::LEFT, 2);
     DisplayManager.printText(9, 6, minute, TEXT_ALIGNMENT::LEFT, 2);
 }

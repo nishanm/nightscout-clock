@@ -7,9 +7,7 @@
 #include "globals.h"
 
 namespace {
-// Reads a color for one of the data-age settings, refusing anything outside the set the WebUI
-// offers. An unusable color falls back rather than failing the load, and says so, because a
-// setting that silently means something else is worse than one that visibly ignored you.
+// Fall back on invalid or disallowed colors so the rest of the settings still load.
 DISPLAY_COLOR readDataAgeColor(const String& value, DISPLAY_COLOR fallback) {
     DISPLAY_COLOR color = displayColorFromString(value, fallback);
     if (!isDataAgeColor(color)) {
@@ -246,17 +244,8 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
 
-    // Color used once the data is older than the threshold above, and for the "no data" screen.
-    //
-    // The fallback to stale_old_color is deliberate and load-bearing. That was this setting's
-    // key before it was renamed, so a config written by an earlier build carries it and no
-    // data_old_color. Defaulting straight to GRAY there would silently put that user back on the
-    // one color the panel cannot render at MIN_BRIGHTNESS - the exact failure this setting
-    // exists to escape, applied to the people who had already worked around it. Verified on a
-    // TC001: without this, a device configured "blue" came back up blank after the update.
     settings.data_old_color = readDataAgeColor(
-        (*doc)["data_old_color"].as<String>(),
-        readDataAgeColor((*doc)["stale_old_color"].as<String>(), DISPLAY_COLOR::GRAY));
+        (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
@@ -387,10 +376,6 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
     (*doc)["data_old_color"] = toString(settings.data_old_color);
-    // stale_old_color was this setting's key before it was renamed, and loadSettingsFromFile still
-    // reads it so an existing config keeps its color. Drop it once the new key has been written,
-    // or every config carries a second color that no longer decides anything.
-    doc->remove("stale_old_color");
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;

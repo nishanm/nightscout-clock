@@ -72,14 +72,7 @@ enum class BRIGHTNES_MODE : uint8_t {
     AUTO_DIMMED = 101,
 };
 
-// Every color the firmware draws with. The enum value IS the RGB565 code, so a DISPLAY_COLOR can
-// be used wherever a color is expected without a lookup table, and the codes live in one place
-// rather than two.
-//
-// A note on GRAY, since it is why the data-is-old color is configurable at all: 0xA514 is
-// (165, 162, 165) and no channel is at its maximum, so at MIN_BRIGHTNESS the panel cannot render
-// it and a stale reading disappears entirely. Every other color here keeps at least one channel
-// at maximum. See BGDisplayFace::getDataOldColor().
+// RGB565 values; cast to uint16_t when passing a color to the display.
 enum class DISPLAY_COLOR : uint16_t {
     BLACK = 0x0000,
     BLUE = 0x001F,
@@ -143,8 +136,7 @@ inline String toString(DISPLAY_COLOR color) {
     }
 }
 
-// Parses the value written by toString(DISPLAY_COLOR). An unknown or missing value falls back
-// rather than failing, so an older config file - or a hand-edited one - still loads.
+// Parse lowercase color names; return fallback for unrecognized values.
 inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR fallback) {
     if (value == "black") {
         return DISPLAY_COLOR::BLACK;
@@ -176,12 +168,8 @@ inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR f
     return fallback;
 }
 
-// The colors a data-age setting may use. DISPLAY_COLOR lists every color the firmware draws
-// with, which is deliberately wider than what these settings should accept: BLACK is invisible,
-// red, green and yellow are what the glucose bands mean, and white is what a fresh trend arrow
-// already uses, so any of them would make the age of a reading indistinguishable from its
-// severity. The WebUI offers exactly this list, and enforcing it here as well keeps a hand
-// written config from recreating the bug the setting exists to escape.
+// Exclude black (invisible), glucose-band colors, and the fresh-arrow color
+// so data age remains distinguishable. Keep this set aligned with the WebUI.
 inline bool isDataAgeColor(DISPLAY_COLOR color) {
     return color == DISPLAY_COLOR::GRAY || color == DISPLAY_COLOR::BLUE ||
            color == DISPLAY_COLOR::CYAN || color == DISPLAY_COLOR::MAGENTA;
