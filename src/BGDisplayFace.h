@@ -31,10 +31,8 @@ struct RenderContext {
     const std::list<GlucoseReading>& readings;
 };
 
-// True while a reading is old enough to warn about but not yet old enough to be called stale.
-// Free rather than a member because the render loop needs the same answer the faces do: this
-// state changes as time passes rather than when data arrives, so the screen has to be redrawn
-// when it changes.
+// True while a reading is past the early-stale threshold but not yet data-is-old.
+// A free function because the render loop needs the same answer the faces do.
 bool isReadingEarlyStale(const GlucoseReading& reading);
 
 class BGDisplayFace {
@@ -50,9 +48,6 @@ protected:
     // gray can be invisible at minimum brightness.
     uint16_t getDataOldColor() const;
 
-    // True once a reading is older than the early-stale threshold. Only the lower bound is
-    // checked here; callers test the fully-old state first, so that keeps precedence.
-    bool isEarlyStale(const GlucoseReading& reading) const;
     uint16_t getEarlyStaleColor() const;
 };
 

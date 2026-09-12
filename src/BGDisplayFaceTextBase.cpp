@@ -12,7 +12,7 @@ void BGDisplayFaceTextBase::showReading(
     // Fully old wins over early stale, which wins over the glucose band.
     if (isOld) {
         DisplayManager.setTextColor(getDataOldColor());
-    } else if (isEarlyStale(reading)) {
+    } else if (isReadingEarlyStale(reading)) {
         DisplayManager.setTextColor(getEarlyStaleColor());
     } else {
         SetDisplayColorByBGValue(reading);
@@ -103,7 +103,7 @@ void BGDisplayFaceTextBase::showTrendArrow(
     uint16_t color = COLOR_WHITE;
     if (dataIsOld) {
         color = getDataOldColor();
-    } else if (isEarlyStale(reading)) {
+    } else if (isReadingEarlyStale(reading)) {
         color = getEarlyStaleColor();
     }
 
