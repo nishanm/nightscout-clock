@@ -168,13 +168,6 @@ inline DISPLAY_COLOR displayColorFromString(const String& value, DISPLAY_COLOR f
     return fallback;
 }
 
-// Exclude black (invisible), glucose-band colors, and the fresh-arrow color
-// so data age remains distinguishable. Keep this set aligned with the WebUI.
-inline bool isDataAgeColor(DISPLAY_COLOR color) {
-    return color == DISPLAY_COLOR::GRAY || color == DISPLAY_COLOR::BLUE ||
-           color == DISPLAY_COLOR::CYAN || color == DISPLAY_COLOR::MAGENTA;
-}
-
 inline String toString(BRIGHTNES_MODE mode) {
     switch (mode) {
         case BRIGHTNES_MODE::MANUAL:

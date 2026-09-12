@@ -7,17 +7,6 @@
 #include "globals.h"
 
 namespace {
-// Fall back on invalid or disallowed colors so the rest of the settings still load.
-DISPLAY_COLOR readDataAgeColor(const String& value, DISPLAY_COLOR fallback) {
-    DISPLAY_COLOR color = displayColorFromString(value, fallback);
-    if (!isDataAgeColor(color)) {
-        DEBUG_PRINTF("Data age color \"%s\" is not one of the colors offered, ignoring it\n",
-                     value.c_str());
-        return fallback;
-    }
-    return color;
-}
-
 bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
@@ -244,7 +233,7 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
 
-    settings.data_old_color = readDataAgeColor(
+    settings.data_old_color = displayColorFromString(
         (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
     // Web interface authentication
