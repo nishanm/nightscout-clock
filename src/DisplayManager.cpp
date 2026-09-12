@@ -249,11 +249,8 @@ int DisplayManager_::brightnessForLevel(int level) {
     return (int)lroundf(MIN_BRIGHTNESS + curved * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
 }
 
-// Is the clock inside its night window right now?
-//
-// Answered from the wall clock, so it needs a time the device actually has: an unset clock must
-// NOT be treated as night, or an NTP failure would dim the panel and leave it dim. Cached for a
-// second because the auto-brightness loop asks every 100 ms.
+// Inside the night window? An unset clock is never night, or an NTP failure would leave the
+// panel dim. Cached for a second because the brightness loop asks every 100 ms.
 bool DisplayManager_::isNightModeActive() {
     static unsigned long lastCheckMillis = 0;
     static bool cached = false;
