@@ -7,11 +7,8 @@
 
 #include "enums.h"
 
-// One window during which an alarm is allowed to sound.
-//
-// `days` is a bitmask over tm_wday: bit 0 is Sunday through bit 6 is Saturday. It names the day
-// the window STARTS on, so a window that runs past midnight belongs to the evening it began -
-// "every day 18:00-08:00" keeps alerting until 08:00 the following morning.
+// One window during which an alarm is allowed to sound. `days` is a tm_wday bitmask
+// (bit 0 = Sunday) naming the day the window starts on, so it may run past midnight.
 struct AlertWindow {
     uint8_t days = 0;
     int startMinutes = 0;  // minutes since midnight, 0-1439

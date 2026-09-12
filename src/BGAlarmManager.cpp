@@ -75,11 +75,8 @@ void BGAlarmManager_::setup() {
     }
 }
 
-// True when this alarm is allowed to sound right now.
-//
-// No windows at all means "at any time", which is what every configuration written before alert
-// windows existed is migrated to unless it had a silence interval set. Once at least one window
-// is defined the alarm sounds only while one of them is open, so a window is an ALLOW rule.
+// True when this alarm is allowed to sound now: no windows means at any time,
+// otherwise only while one of them is open.
 static bool isInsideAlertWindow(const std::vector<AlertWindow>& alertWindows) {
     if (alertWindows.empty()) {
         return true;
@@ -87,9 +84,7 @@ static bool isInsideAlertWindow(const std::vector<AlertWindow>& alertWindows) {
 
     tm now;
     if (!ServerManager.tryGetTimezonedTime(now)) {
-        // A clock that cannot read the time cannot know whether a window is open. Falling back to
-        // an unset struct here would let a schedule silence a low reading on a device that has
-        // simply not reached an NTP server yet, so treat an unknown time as "sound the alarm".
+        // Unknown time (no NTP yet) must never silence an alarm.
         DEBUG_PRINTLN("Alarms: time is not known, ignoring alert windows and alerting anyway");
         return true;
     }

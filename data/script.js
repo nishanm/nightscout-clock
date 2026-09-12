@@ -721,12 +721,7 @@
 
     let alertWindowRowCount = 0;
 
-    // Builds one window row without attaching it, so a whole list can be rendered and then
-    // validated once rather than after every row.
-    //
-    // Only values this file owns are interpolated into the markup: the day numbers and labels come
-    // from ALERT_WINDOW_DAYS and the row id from a counter. The stored times are applied with
-    // .val() below instead, so a malformed config.json cannot inject markup into the settings page.
+    // Builds one window row. Stored times are applied with .val(), never interpolated into markup.
     function buildAlertWindowRow(alarmType, alertWindow) {
         const rowId = `alert_window_${++alertWindowRowCount}`;
         const days = (alertWindow && alertWindow.days) || '0123456';
@@ -799,9 +794,7 @@
             const from = row.find('.alert-window-from').val() || '';
             const to = row.find('.alert-window-to').val() || '';
 
-            // validateAlertWindows blocks the save before this runs, so an unusable row here means
-            // the alarm is switched off and the row was never validated. Skip it either way: the
-            // firmware would discard it on load.
+            // An unusable row belongs to a disabled alarm; the firmware would drop it anyway.
             if (days === '' || from === '' || to === '' || from === to) {
                 return;
             }

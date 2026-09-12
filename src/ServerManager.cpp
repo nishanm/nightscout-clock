@@ -680,9 +680,7 @@ tm ServerManager_::getTimezonedTime() {
     return timeinfo;
 }
 
-// getTimezonedTime() hands back its struct whether or not the clock could read the time, which is
-// harmless for drawing a face but not for a decision an alarm depends on. This reports the failure
-// so the caller can choose what an unknown time should mean.
+// Like getTimezonedTime(), but reports whether the clock actually knows the time.
 bool ServerManager_::tryGetTimezonedTime(tm& timeinfo) { return getLocalTime(&timeinfo); }
 
 void ServerManager_::stop() {

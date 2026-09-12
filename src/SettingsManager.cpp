@@ -38,11 +38,8 @@ String minutesAsTimeOfDay(int minutes) {
     return String(buffer);
 }
 
-// Days are listed as tm_wday digits, so "12345" is Monday to Friday and "0123456" is every day.
-// Returns false for anything else - an empty list, a stray character, a day listed twice - and
-// only then is days meaningful. Skipping what it cannot read would be worse here than refusing
-// it: "Mon1" would quietly become Monday alone, and a list that decides when an alarm may sound
-// has to mean exactly what it says. parseTimeOfDayMinutes below is strict for the same reason.
+// Days are tm_wday digits ("12345" = Monday to Friday). Anything unreadable is refused,
+// not skipped, because a partial day list would silence an alarm on the wrong days.
 bool parseAlertWindowDays(const String& value, uint8_t& days) {
     days = 0;
     if (value.length() == 0 || value.length() > 7) {
@@ -91,9 +88,7 @@ std::vector<AlertWindow> readAlertWindows(JsonVariantConst configured) {
         window.startMinutes = parseTimeOfDayMinutes(entry["from"].as<String>());
         window.endMinutes = parseTimeOfDayMinutes(entry["to"].as<String>());
 
-        // A window with unreadable days, an unreadable time or no duration can never open.
-        // Dropping it here keeps the alarm evaluation free of special cases, and an alert window
-        // that cannot be understood must never end up silencing an alarm.
+        // A window that cannot be read can never open; drop it rather than let it silence an alarm.
         if (!daysAreReadable || window.startMinutes < 0 || window.endMinutes < 0 ||
             window.startMinutes == window.endMinutes) {
             DEBUG_PRINTLN("Ignoring an alert window that could never open");
@@ -106,9 +101,7 @@ std::vector<AlertWindow> readAlertWindows(JsonVariantConst configured) {
     return windows;
 }
 
-// Alert windows replaced the fixed silence intervals, and a configuration written before them has
-// no window list to read. Both old values are the exact complement of an all week window, so the
-// translation is lossless: the clock keeps alerting at precisely the same times it did before.
+// Translate a pre-window silence interval into the equivalent alert window (lossless).
 std::vector<AlertWindow> alertWindowsFromSilenceInterval(const String& silenceInterval) {
     std::vector<AlertWindow> windows;
     AlertWindow window;
@@ -141,11 +134,7 @@ std::vector<AlertWindow> loadAlertWindows(JsonDocument& doc, const char* windows
 void writeAlertWindows(JsonDocument& doc, const char* windowsKey, const char* legacySilenceKey,
                        const std::vector<AlertWindow>& windows) {
     doc.remove(windowsKey);
-    // The migration above only runs while the window list is absent, so the old key has to go or
-    // a stale silence interval could come back the next time this file is read. This makes the
-    // move one way: firmware old enough to predate windows would find neither key and alert at
-    // any time, which is the loud direction, but a schedule set here does not survive a
-    // downgrade.
+    // Drop the old key once windows are written, or the migration would re-run on the next load.
     doc.remove(legacySilenceKey);
 
     JsonArray configured = doc[windowsKey].to<JsonArray>();
