@@ -17,8 +17,11 @@ void BGDisplayFaceSimpleDark::showReadings(
 
     // The inversion that distinguishes this from Simple: the value never carries the band, so
     // it never lights red or green, and the arrow carries it instead at a fraction of the cost.
-    showTrendArrowInColor(
-        lastReading, MATRIX_WIDTH - 5, 1, dataIsOld ? COLOR_CYAN : getColorByBGValue(lastReading));
+    if (dataIsOld) {
+        showTrendArrow(lastReading, MATRIX_WIDTH - 5, 1, true);
+    } else {
+        showTrendArrowInColor(lastReading, MATRIX_WIDTH - 5, 1, getColorByBGValue(lastReading));
+    }
 }
 
 void BGDisplayFaceSimpleDark::showNoData() const {

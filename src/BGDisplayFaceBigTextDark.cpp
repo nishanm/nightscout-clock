@@ -9,6 +9,9 @@ void BGDisplayFaceBigTextDark::showReadings(
     showReadingInColor(
         lastReading, 0, 7, TEXT_ALIGNMENT::LEFT, FONT_TYPE::LARGE,
         dataIsOld ? COLOR_CYAN : getValueColor());
-    showTrendArrowInColor(
-        lastReading, MATRIX_WIDTH - 5, 1, dataIsOld ? COLOR_CYAN : getColorByBGValue(lastReading));
+    if (dataIsOld) {
+        showTrendArrow(lastReading, MATRIX_WIDTH - 5, 1, true);
+    } else {
+        showTrendArrowInColor(lastReading, MATRIX_WIDTH - 5, 1, getColorByBGValue(lastReading));
+    }
 }
