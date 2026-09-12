@@ -22,7 +22,7 @@ bool isReadingEarlyStale(const GlucoseReading& reading) {
 
     const int secondsAgo = reading.getSecondsAgo();
     return secondsAgo >= 60 * SettingsManager.settings.stale_early_minutes &&
-           secondsAgo < 60 * SettingsManager.settings.bg_data_too_old_threshold_minutes;
+           secondsAgo <= 60 * SettingsManager.settings.bg_data_too_old_threshold_minutes;
 }
 
 uint16_t BGDisplayFace::getEarlyStaleColor() const {
