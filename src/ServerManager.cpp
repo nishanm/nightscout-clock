@@ -667,19 +667,13 @@ tm ServerManager_::getTimezonedTime() {
     return timeinfo;
 }
 
-// Like getTimezonedTime(), but reports whether the clock actually knows the time.
-// The default timeout is 0 so callers on the render path never block.
-bool ServerManager_::tryGetTimezonedTime(tm& timeinfo, uint32_t timeoutMs) {
-    if (timeoutMs == 0) {
-        // Not getLocalTime(): with a zero timeout its wait loop can skip the read entirely when the
-        // millisecond counter ticks, reporting an unknown time on a synced clock. Read the clock directly.
-        time_t now;
-        time(&now);
-        localtime_r(&now, &timeinfo);
-        return timeinfo.tm_year > (2016 - 1900);
-    }
-
-    return getLocalTime(&timeinfo, timeoutMs);
+// Like getTimezonedTime(), but reports whether the clock actually knows the time. Reads the
+// clock directly: getLocalTime() waits up to 5 s when it is unset, and can skip the read on a zero timeout.
+bool ServerManager_::tryGetTimezonedTime(tm& timeinfo) {
+    time_t now;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    return timeinfo.tm_year > (2016 - 1900);
 }
 
 void ServerManager_::stop() {
