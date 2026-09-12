@@ -58,6 +58,11 @@
     "custom_nodatatimer_enable": false,
     "custom_nodatatimer": 20,
     "data_old_color": "gray",
+    "night_mode_enable": false,
+    "night_start": "22:00",
+    "night_end": "07:00",
+    "night_face": -1,
+    "night_brightness_level": 1,
     "web_auth_enable": false,
     "web_auth_password": ""
 }
