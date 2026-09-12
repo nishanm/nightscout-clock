@@ -52,6 +52,8 @@ void BGDisplayManager_::setup() {
     // Registered last so the existing face ids keep their meaning.
     faces.push_back(new BGDisplayFaceSimpleDark());
     facesNames[6] = "Simple (dark)";
+    faces.push_back(new BGDisplayFaceBigTextDark());
+    facesNames[7] = "Big text (dark)";
 
     if (faces.size() != CLOCK_FACE_COUNT) {
         DEBUG_PRINTF(

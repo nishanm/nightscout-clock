@@ -11,7 +11,7 @@ public:
     void showReadings(const std::list<GlucoseReading>& readings, bool dataIsOld = false) const override;
     void showNoData() const override;
 
-private:
+protected:
     uint16_t getValueColor() const;
 };
 

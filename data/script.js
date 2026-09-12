@@ -19,7 +19,8 @@
         3: 'Big text',
         4: 'Value and delta',
         5: 'Current time and BG value',
-        6: 'Simple (dark)'
+        6: 'Simple (dark)',
+        7: 'Big text (dark)'
     };
 
     if (window.location.href.indexOf("127.0.0.1") > 0) {
@@ -182,7 +183,7 @@
     // Faces built for the dark are the only ones that read this setting, so the control is
     // hidden for the rest. Disabled as well as hidden, matching toggleFaceCycleSettings.
     function toggleNightValueColorSettings() {
-        const darkFaces = [6];
+        const darkFaces = [6, 7];
         const selected = face => darkFaces.includes(parseInt(face, 10));
         // The setting belongs to the face, not to night mode, so the control follows the face
         // wherever it is chosen - the night picker, the default face, or the cycle.
