@@ -105,7 +105,7 @@ void BGDisplayFaceTextBase::showTrendArrow(
     // An old reading has no trend to point at; show the no-data mark instead, as
     // showTrendVerticalLine() already blanks the trend when old.
     if (dataIsOld) {
-        DisplayManager.drawBitmap(x, y, symbol_noData, 5, 5, COLOR_WHITE);
+        DisplayManager.drawBitmap(x, y, symbol_noData, 5, 5, getDataOldColor());
         return;
     }
 
