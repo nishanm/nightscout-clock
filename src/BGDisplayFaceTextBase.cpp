@@ -12,7 +12,7 @@ void BGDisplayFaceTextBase::showReading(
     if (!isOld) {
         SetDisplayColorByBGValue(reading);
     } else {
-        DisplayManager.setTextColor(BG_COLOR_OLD);
+        DisplayManager.setTextColor(getDataOldColor());
     }
 
     DisplayManager.setFont(font);
@@ -99,7 +99,7 @@ void BGDisplayFaceTextBase::showTrendArrow(
     const GlucoseReading reading, int16_t x, int16_t y, bool dataIsOld) const {
     uint16_t color = COLOR_WHITE;
     if (dataIsOld) {
-        color = BG_COLOR_OLD;
+        color = getDataOldColor();
     }
 
     DisplayManager.drawBitmap(x, y, glucoseTrendSymbols.at(reading.trend), 5, 5, color);

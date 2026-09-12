@@ -61,6 +61,7 @@ public:
     bool custom_nodatatimer_enable;
     int custom_nodatatimer;
     int bg_data_too_old_threshold_minutes = 20;
+    DISPLAY_COLOR data_old_color = DISPLAY_COLOR::GRAY;
     bool alarm_intensive_mode;
     bool web_auth_enable;
     String web_auth_password;

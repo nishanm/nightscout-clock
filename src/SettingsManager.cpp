@@ -233,6 +233,9 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
 
+    settings.data_old_color = displayColorFromString(
+        (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
+
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
     settings.web_auth_password = (*doc)["web_auth_password"].as<String>();
@@ -361,6 +364,7 @@ bool SettingsManager_::saveSettingsToFile() {
     // Custom No Data Timer
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
+    (*doc)["data_old_color"] = toString(settings.data_old_color);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;
