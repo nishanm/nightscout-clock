@@ -804,9 +804,7 @@
         validateRtttlField(melodyField);
     }
 
-    // Keeps the picker honest when the melody is typed in or loaded from the clock. Each option's
-    // value is the melody itself, so selecting by value is the whole lookup: a melody that is not in
-    // the list leaves the select matching nothing, which is exactly what "Custom" is for.
+    // Select the preset whose value is this melody; no match means "Custom".
     function syncMelodyPreset(alarmType) {
         const preset = $(`#alarm_${alarmType}_melody_preset`);
         preset.val(($(`#alarm_${alarmType}_melody`).val() || '').trim());
