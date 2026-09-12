@@ -89,6 +89,11 @@ const uint8_t symbol_empty[] PROGMEM = {
     0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+// Drawn in the arrow's place once the reading is too old: the clock has no current trend to show.
+const uint8_t symbol_noData[] PROGMEM = {
+    0x88, 0x50, 0x20, 0x50, 0x88,
+};
+
 const std::map<BG_TREND, const uint8_t*> glucoseTrendSymbols = {
     {BG_TREND::NONE, symbol_empty},
     {BG_TREND::DOUBLE_UP, symbol_doubleUp},
@@ -104,7 +109,14 @@ const std::map<BG_TREND, const uint8_t*> glucoseTrendSymbols = {
 
 void BGDisplayFaceTextBase::showTrendArrow(
     const GlucoseReading reading, int16_t x, int16_t y, bool dataIsOld) const {
-    showTrendArrowInColor(reading, x, y, dataIsOld ? getDataOldColor() : COLOR_WHITE);
+    // An old reading has no trend to point at; show the no-data mark instead, as
+    // showTrendVerticalLine() already blanks the trend when old.
+    if (dataIsOld) {
+        DisplayManager.drawBitmap(x, y, symbol_noData, 5, 5, getDataOldColor());
+        return;
+    }
+
+    showTrendArrowInColor(reading, x, y, COLOR_WHITE);
 }
 
 void BGDisplayFaceTextBase::showTrendArrowInColor(
