@@ -1438,10 +1438,7 @@
             isNaN(nightBrightness) || nightBrightness < 1 || nightBrightness > 10 ? 1 : nightBrightness);
 
         showNightBrightness();
-        const nightValueColors = ['white', 'magenta', 'blue'];
-        const nightValueColor = json['night_value_color'];
-        $('#night_value_color').val(
-            nightValueColors.includes(nightValueColor) ? nightValueColor : 'white');
+        $('#night_value_color').val(json['night_value_color'] || 'white');
 
         toggleNightValueColorSettings();
         toggleNightModeSettings();
