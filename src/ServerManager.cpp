@@ -436,9 +436,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 }
             }
 
-            // An unsupported repeat interval is corrected on the next load, so the file would be
-            // accepted and then quietly mean something else. Refuse it here instead, and ask
-            // SettingsManager which values it accepts rather than restating the list.
+            // Refuse a value the loader would silently correct; the accepted set lives in SettingsManager.
             if (!data["alarm_repeat_interval_seconds"].isNull()) {
                 if (!data["alarm_repeat_interval_seconds"].is<int>() ||
                     !SettingsManager_::isValidAlarmRepeatInterval(

@@ -19,8 +19,7 @@ public:
     bool saveSettingsToFile();
     bool trySaveJsonAsSettings(JsonDocument doc);
     void factoryReset();
-    // The alarm repeat intervals the WebUI offers. Public so the save endpoint can hold a posted
-    // value to the same set the loader does, rather than restating it.
+    // The repeat intervals the WebUI offers; shared with the save endpoint.
     static bool isValidAlarmRepeatInterval(int intervalSeconds);
 
     Settings settings;
