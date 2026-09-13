@@ -65,6 +65,7 @@
         $('#custom_hostname_enable').on('change', toggleCustomHostnameSettings);
         $('#custom_nodatatimer_enable').on('change', toggleCustomNoDataSettings);
         $('#web_auth_enable').on('change', toggleWebAuthSettings);
+        $('#alarm_intensive_mode').on('change', toggleAlarmRepeatSettings);
         $('#face_cycle_enabled').on('change', toggleFaceCycleSettings);
         $('.face-cycle-face').on('change', validateFaceCycleSelection);
         $('#open_wifi_network').on('change', toggleWifiPasswordField);
@@ -102,6 +103,11 @@
 
             };
         });
+    }
+
+    function toggleAlarmRepeatSettings() {
+        const intensiveMode = $('#alarm_intensive_mode').is(':checked');
+        $('#alarm_repeat_interval_seconds').prop('disabled', intensiveMode);
     }
 
     function toggleAdditionalWifiSettings() {
@@ -943,6 +949,7 @@
         setAlarmDataToJson(json, 'low');
         setAlarmDataToJson(json, 'urgent_low');
         json['alarm_intensive_mode'] = $('#alarm_intensive_mode').is(':checked');
+        json['alarm_repeat_interval_seconds'] = parseInt($('#alarm_repeat_interval_seconds').val());
 
         // Additional WiFi
         json['additional_wifi_enable'] = $('#additional_wifi_enable').is(':checked');
@@ -1294,6 +1301,11 @@
         loadAlarmDataFromJson(json, 'low');
         loadAlarmDataFromJson(json, 'urgent_low');
         $('#alarm_intensive_mode').prop('checked', json['alarm_intensive_mode']);
+        const repeatInterval = json['alarm_repeat_interval_seconds'];
+        $('#alarm_repeat_interval_seconds').val(
+            [60, 120, 300].includes(repeatInterval) ? repeatInterval : 300
+        );
+        toggleAlarmRepeatSettings();
 
         // Additional WiFi
         $('#additional_wifi_enable').prop('checked', json['additional_wifi_enable']);
