@@ -68,9 +68,11 @@
     function renderClockFaceControls() {
         const defaultFaceSelect = $('#default_clock_face').empty();
         const cycleFaceOptions = $('#face_cycle_face_options').empty();
+        const nightFaceSelect = $('#night_face');
 
         Object.entries(clockFaces).forEach(([id, name]) => {
             $('<option>', { value: id, text: name }).appendTo(defaultFaceSelect);
+            $('<option>', { value: id, text: name }).appendTo(nightFaceSelect);
 
             const checkboxId = `face_cycle_face_${id}`;
             cycleFaceOptions.append(`
