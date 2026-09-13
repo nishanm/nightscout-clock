@@ -82,6 +82,10 @@ JsonDocument* SettingsManager_::readConfigJsonFile() {
     }
 }
 
+bool SettingsManager_::isValidAlarmRepeatInterval(int intervalSeconds) {
+    return intervalSeconds == 60 || intervalSeconds == 120 || intervalSeconds == 300;
+}
+
 bool SettingsManager_::loadSettingsFromFile() {
     auto doc = readConfigJsonFile();
     if (doc == NULL)
@@ -135,8 +139,7 @@ bool SettingsManager_::loadSettingsFromFile() {
         }
     }
     if (settings.face_cycle_faces.empty()) {
-        int fallbackFace = settings.default_clockface >= 0 &&
-                                   settings.default_clockface < CLOCK_FACE_COUNT
+        int fallbackFace = settings.default_clockface >= 0 && settings.default_clockface < CLOCK_FACE_COUNT
                                ? settings.default_clockface
                                : 0;
         settings.face_cycle_faces.push_back(fallbackFace);
@@ -210,6 +213,12 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.alarm_urgent_low_melody = (*doc)["alarm_urgent_low_melody"].as<String>();
     settings.alarm_intensive_mode = (*doc)["alarm_intensive_mode"].as<bool>();
 
+    settings.alarm_repeat_interval_seconds = (*doc)["alarm_repeat_interval_seconds"] | 300;
+    if (!isValidAlarmRepeatInterval(settings.alarm_repeat_interval_seconds)) {
+        DEBUG_PRINTLN("Invalid alarm repeat interval in config, defaulting to 300 seconds");
+        settings.alarm_repeat_interval_seconds = 300;
+    }
+
     // Additional WiFi
     settings.additional_wifi_enable = (*doc)["additional_wifi_enable"].as<bool>();
     settings.additional_wifi_type = (*doc)["additional_wifi_type"].as<String>();
@@ -233,6 +242,9 @@ bool SettingsManager_::loadSettingsFromFile() {
             DEBUG_PRINTLN("Custom No Data Timer value is invalid, using default value of 20 minutes.");
         }
     }
+
+    settings.data_old_color = displayColorFromString(
+        (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
@@ -347,6 +359,7 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["alarm_low_melody"] = settings.alarm_low_melody;
     (*doc)["alarm_urgent_low_melody"] = settings.alarm_urgent_low_melody;
     (*doc)["alarm_intensive_mode"] = settings.alarm_intensive_mode;
+    (*doc)["alarm_repeat_interval_seconds"] = settings.alarm_repeat_interval_seconds;
 
     // Additional WiFi
     (*doc)["additional_wifi_enable"] = settings.additional_wifi_enable;
@@ -362,6 +375,7 @@ bool SettingsManager_::saveSettingsToFile() {
     // Custom No Data Timer
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
+    (*doc)["data_old_color"] = toString(settings.data_old_color);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;

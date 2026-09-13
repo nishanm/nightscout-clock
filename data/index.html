@@ -657,7 +657,19 @@
                             </div>
                         </div>
                         <div class="row mt-3">
-                            <div class="col-12">
+                            <div class="col-sm-4">
+                                <label for="alarm_repeat_interval_seconds" class="form-label">Repeat every</label>
+                                <select class="form-select" id="alarm_repeat_interval_seconds" required>
+                                    <option value="60">1 minute</option>
+                                    <option value="120">2 minutes</option>
+                                    <option value="300">5 minutes</option>
+                                </select>
+                                <div class="form-text">
+                                    Time between alarm repeats when not snoozed. Intensive mode overrides
+                                    this setting.
+                                </div>
+                            </div>
+                            <div class="col-sm-8 align-content-center">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="alarm_intensive_mode">
                                     <label class="form-check-label" for="alarm_intensive_mode">
@@ -675,8 +687,9 @@
                                         When an alarm condition is met (BG is low or high), the alarm will sound if
                                         enabled. The volume is moderate, so we recommend testing it with the "Try"
                                         buttons before enabling. The alarm will beep 2 times (high), 3 times (low),
-                                        or 4 times (urgent low), then pause for 5 minutes before sounding again. If
-                                        "intense mode" is selected, the alarm will continue beeping every few
+                                        or 4 times (urgent low), then pause for the selected repeat interval
+                                        before sounding again. If "Intensive mode" is selected, the alarm will
+                                        continue beeping every few
                                         seconds without pause. This cycle continues until blood glucose levels
                                         return to normal or until you press the "Select" (center) button to snooze.
                                         When snoozed, the clock displays "SNOOZED" for your selected snooze
@@ -750,6 +763,22 @@
                                 </select>
                                 <div class="invalid-feedback">
                                     Please select the time format (AM/PM or 24h)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3 col-lg-3" id="data_old_color_cell">
+                                <label for="data_old_color" class="form-label">Color when data is old</label>
+                                <select class="form-select" id="data_old_color">
+                                    <option value="gray">Gray (default)</option>
+                                    <option value="cyan">Cyan</option>
+                                    <option value="magenta">Magenta</option>
+                                    <option value="blue">Blue</option>
+                                </select>
+                                <div class="form-text">
+                                    Also used for the &quot;no data&quot; screen. Gray is not visible at the lowest
+                                    brightness, so if you run the clock dim, choose one of the others to keep stale
+                                    readings readable.
                                 </div>
                             </div>
                         </div>

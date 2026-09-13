@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <IPAddress.h>
 
+#include "enums.h"
+
 #define VERSION "0.30.0"
 
 #ifdef DEBUG
@@ -40,16 +42,17 @@
 #define AP_GATEWAY "192.168.4.1"
 #define DEFAULT_TIMEZONE "UTC0"
 #define TIME_SYNC_INTERVAL 86400
-#define COLOR_RED 0xF800
-#define COLOR_GREEN 0x07E0
-#define COLOR_YELLOW 0xFFE0
-#define COLOR_WHITE 0xFFFF
-#define COLOR_GRAY 0xa514
-#define COLOR_BLACK 0x0000
-#define COLOR_BLUE 0x001F
-#define COLOR_CYAN 0x07FF
+// Defined from DISPLAY_COLOR so the RGB565 codes are declared in exactly one place.
+#define COLOR_RED static_cast<uint16_t>(DISPLAY_COLOR::RED)
+#define COLOR_GREEN static_cast<uint16_t>(DISPLAY_COLOR::GREEN)
+#define COLOR_YELLOW static_cast<uint16_t>(DISPLAY_COLOR::YELLOW)
+#define COLOR_WHITE static_cast<uint16_t>(DISPLAY_COLOR::WHITE)
+#define COLOR_GRAY static_cast<uint16_t>(DISPLAY_COLOR::GRAY)
+#define COLOR_BLACK static_cast<uint16_t>(DISPLAY_COLOR::BLACK)
+#define COLOR_BLUE static_cast<uint16_t>(DISPLAY_COLOR::BLUE)
+#define COLOR_CYAN static_cast<uint16_t>(DISPLAY_COLOR::CYAN)
+#define COLOR_MAGENTA static_cast<uint16_t>(DISPLAY_COLOR::MAGENTA)
 
-#define BG_COLOR_OLD COLOR_GRAY
 #define BG_COLOR_NORMAL COLOR_GREEN
 #define BG_COLOR_WARNING COLOR_YELLOW
 #define BG_COLOR_URGENT COLOR_RED

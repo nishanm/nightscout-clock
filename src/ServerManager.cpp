@@ -373,7 +373,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 return;
             }
             auto&& data = json.as<JsonObject>();
-            auto sendFaceCycleValidationError = [request](const char* error) {
+            auto sendSaveValidationError = [request](const char* error) {
                 String response = "{\"status\": \"error\", \"error\": \"";
                 response += error;
                 response += "\"}";
@@ -381,7 +381,7 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             };
 
             if (!data["face_cycle_enabled"].isNull() && !data["face_cycle_enabled"].is<bool>()) {
-                sendFaceCycleValidationError("face_cycle_enabled must be a boolean");
+                sendSaveValidationError("face_cycle_enabled must be a boolean");
                 return;
             }
 
@@ -390,20 +390,20 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             int uniqueFaceCount = 0;
             if (faceCycleEnabled || hasFaceCycleFaces) {
                 if (!data["face_cycle_faces"].is<JsonArray>()) {
-                    sendFaceCycleValidationError("face_cycle_faces must be an array");
+                    sendSaveValidationError("face_cycle_faces must be an array");
                     return;
                 }
 
                 bool selectedFaces[CLOCK_FACE_COUNT] = {};
                 for (JsonVariant face : data["face_cycle_faces"].as<JsonArray>()) {
                     if (!face.is<int>()) {
-                        sendFaceCycleValidationError("Face selections must use valid clock face IDs");
+                        sendSaveValidationError("Face selections must use valid clock face IDs");
                         return;
                     }
 
                     int faceId = face.as<int>();
                     if (faceId < 0 || faceId >= CLOCK_FACE_COUNT) {
-                        sendFaceCycleValidationError("Face selections must use valid clock face IDs");
+                        sendSaveValidationError("Face selections must use valid clock face IDs");
                         return;
                     }
 
@@ -415,14 +415,14 @@ void ServerManager_::setupWebServer(IPAddress ip) {
             }
 
             if (faceCycleEnabled && uniqueFaceCount < 2) {
-                sendFaceCycleValidationError("Select at least two different clock faces");
+                sendSaveValidationError("Select at least two different clock faces");
                 return;
             }
 
             bool hasFaceCycleInterval = !data["face_cycle_interval_seconds"].isNull();
             if (faceCycleEnabled || hasFaceCycleInterval) {
                 if (!data["face_cycle_interval_seconds"].is<int>()) {
-                    sendFaceCycleValidationError(
+                    sendSaveValidationError(
                         "Face cycle period must be 10, 30, 60, 120, 180, or 300 seconds");
                     return;
                 }
@@ -430,8 +430,19 @@ void ServerManager_::setupWebServer(IPAddress ip) {
                 int intervalSeconds = data["face_cycle_interval_seconds"].as<int>();
                 if (intervalSeconds != 10 && intervalSeconds != 30 && intervalSeconds != 60 &&
                     intervalSeconds != 120 && intervalSeconds != 180 && intervalSeconds != 300) {
-                    sendFaceCycleValidationError(
+                    sendSaveValidationError(
                         "Face cycle period must be 10, 30, 60, 120, 180, or 300 seconds");
+                    return;
+                }
+            }
+
+            // Refuse a value the loader would silently correct; the accepted set lives in SettingsManager.
+            if (!data["alarm_repeat_interval_seconds"].isNull()) {
+                if (!data["alarm_repeat_interval_seconds"].is<int>() ||
+                    !SettingsManager_::isValidAlarmRepeatInterval(
+                        data["alarm_repeat_interval_seconds"].as<int>())) {
+                    sendSaveValidationError(
+                        "Alarm repeat interval must be 60, 120, or 300 seconds");
                     return;
                 }
             }

@@ -44,6 +44,7 @@
     "alarm_low_melody": "",
     "alarm_urgent_low_melody": "",
     "alarm_intensive_mode": false,
+    "alarm_repeat_interval_seconds": 300,
     "librelinkup_email": "",
     "librelinkup_password": "",
     "librelinkup_region": "EU",
@@ -57,6 +58,7 @@
     "custom_hostname": "",
     "custom_nodatatimer_enable": false,
     "custom_nodatatimer": 20,
+    "data_old_color": "gray",
     "web_auth_enable": false,
     "web_auth_password": ""
 }
