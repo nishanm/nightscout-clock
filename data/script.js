@@ -108,7 +108,8 @@
         });
     }
 
-    // One card per glucose range: its color (behind a pencil), the limit it ends at, and the range it covers.
+    // One compact card per glucose range: its color (behind a pencil) and the limit it ends or starts at.
+    // The range bar's tick values show where each range runs, so the cards do not repeat them.
     function renderGlucoseBands() {
         const cards = $('#glucose_bands').empty();
         glucoseBands.forEach(band => {
@@ -116,24 +117,23 @@
                 .map(color => `<option value="${color}">${color.charAt(0).toUpperCase() + color.slice(1)}</option>`)
                 .join('');
             const limit = band.limit
-                ? `<label for="${band.limit}" class="form-label small text-body-secondary mb-1">${band.limitLabel}</label>
-                    <div class="input-group has-validation">
-                        <input type="text" class="form-control" id="${band.limit}" required />
+                ? `<label for="${band.limit}" class="visually-hidden">${band.name} ${band.limitLabel.toLowerCase()}</label>
+                    <div class="input-group input-group-sm has-validation">
+                        <input type="text" class="form-control" id="${band.limit}" title="${band.limitLabel}" required />
                         <span class="input-group-text glucose-unit"></span>
-                        <div class="invalid-feedback">Enter a valid ${band.name.toLowerCase()} limit</div>
-                    </div>
-                    <div class="small text-body-secondary mt-2 glucose-band-range"></div>`
-                : `<div class="small text-body-secondary mb-1">Between the low and high limits</div>
-                    <div class="fs-4 glucose-band-range"></div>`;
+                        <div class="invalid-feedback">Enter a valid limit</div>
+                    </div>`
+                : `<div class="form-control-plaintext form-control-sm py-1 glucose-band-range"></div>`;
             const col = $('<div class="col">').append(`
-                <div class="border rounded-3 h-100 p-3" id="${band.key}_card">
-                    <div class="d-flex align-items-center mb-2">
-                        <span class="rounded-circle me-2 glucose-band-dot" style="width: 0.85rem; height: 0.85rem"></span>
-                        <span class="fw-semibold flex-grow-1">${band.name}</span>
-                        <button type="button" class="btn btn-sm btn-link p-0" title="Change ${band.name.toLowerCase()} color"
+                <div class="border rounded-3 h-100 px-2 py-2" id="${band.key}_card">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="rounded-circle me-2 flex-shrink-0 glucose-band-dot"
+                            style="width: 0.7rem; height: 0.7rem"></span>
+                        <span class="small fw-semibold flex-grow-1 text-truncate">${band.name}</span>
+                        <button type="button" class="btn btn-sm btn-link p-0 lh-1" title="Change ${band.name.toLowerCase()} color"
                             aria-label="Change ${band.name.toLowerCase()} color"><i class="bi bi-pencil"></i></button>
                     </div>
-                    <select class="form-select form-select-sm mb-2" id="${band.key}" aria-label="${band.name} color"
+                    <select class="form-select form-select-sm mb-1" id="${band.key}" aria-label="${band.name} color"
                         hidden>${colorOptions}</select>
                     ${limit}
                 </div>`);
@@ -151,7 +151,7 @@
         updateGlucoseBands();
     }
 
-    // Repaints the range bar, card colors, unit suffixes and range readouts from the current form values.
+    // Repaints the range bar, card colors, unit suffixes and the in-range readout from the current form values.
     function updateGlucoseBands() {
         const mmol = $('#bg_units').val() === 'mmol';
         $('.glucose-unit').text(mmol ? 'mmol/L' : 'mg/dL');
@@ -186,7 +186,7 @@
             const color = swatchColors[$(`#${band.key}`).val()] || swatchColors[band.color];
             const card = $(`#${band.key}_card`);
             // .border sets the border with !important, so the colored top edge must be important too.
-            card[0].style.setProperty('border-top', `4px solid ${color}`, 'important');
+            card[0].style.setProperty('border-top', `3px solid ${color}`, 'important');
             card.find('.glucose-band-dot').css('background-color', color);
             card.find('.glucose-band-range').text(ranges[index]);
 
