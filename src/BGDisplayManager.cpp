@@ -48,6 +48,16 @@ void BGDisplayManager_::setup() {
     facesNames[4] = "Value and diff";
     faces.push_back(new BGDisplayFaceClock());
     facesNames[5] = "Clock and value";
+    faces.push_back(new BGDisplayFaceUnicorn());
+    facesNames[6] = "Unicorn";
+    faces.push_back(new BGDisplayFaceSimpleDark());
+    facesNames[7] = "Simple (dark)";
+
+    if (faces.size() != CLOCK_FACE_COUNT) {
+        DEBUG_PRINTF(
+            "Face count mismatch: %u registered, CLOCK_FACE_COUNT is %d",
+            static_cast<unsigned int>(faces.size()), CLOCK_FACE_COUNT);
+    }
 
     configureFaceCycle();
 
