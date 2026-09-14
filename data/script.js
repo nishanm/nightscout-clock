@@ -22,6 +22,25 @@
         6: 'Unicorn'
     };
 
+    // Glucose band colors, changed with the pencil beside each band in Glucose-related settings.
+    // Keys are the setting names; swatchColors are dimmer shades so a swatch reads like the LED panel.
+    const bandColors = {
+        bg_color_urgent_low: { input: 'bg_urgent_low', color: 'red' },
+        bg_color_low: { input: 'bg_low', color: 'yellow' },
+        bg_color_normal: { input: 'bg_normal', color: 'green' },
+        bg_color_high: { input: 'bg_high', color: 'yellow' },
+        bg_color_urgent_high: { input: 'bg_urgent_high', color: 'red' }
+    };
+    const swatchColors = {
+        green: '#008000',
+        yellow: '#8B8000',
+        red: 'darkred',
+        cyan: '#008B8B',
+        blue: '#0000CD',
+        magenta: '#8B008B',
+        white: '#C8C8C8'
+    };
+
     if (window.location.href.indexOf("127.0.0.1") > 0) {
         console.log("Setting clock host to lab ESP..");
         clockHost = "http://192.168.86.24";
@@ -54,6 +73,8 @@
 
     renderClockFaceControls();
 
+    renderBandColorControls();
+
     addValidationHandlers();
 
     addButtonsHandlers();
@@ -84,6 +105,45 @@
                 </div>
             `);
         });
+    }
+
+    function renderBandColorControls() {
+        Object.entries(bandColors).forEach(([key, band]) => {
+            const label = $(`label[for=${band.input}]`);
+            const select = $('<select>', {
+                class: 'form-select form-select-sm mt-2',
+                id: key,
+                hidden: true,
+                'aria-label': `${label.text().trim()} color`
+            });
+            Object.keys(swatchColors).forEach(color => {
+                $('<option>', { value: color, text: color.charAt(0).toUpperCase() + color.slice(1) })
+                    .appendTo(select);
+            });
+            select.on('change', () => updateBandSwatch(key));
+
+            const pencil = $('<button>', {
+                type: 'button',
+                class: 'btn btn-link btn-sm p-0 ms-1 align-baseline',
+                title: 'Change color',
+                'aria-label': 'Change color'
+            }).append($('<i>', { class: 'bi bi-pencil' }));
+            pencil.on('click', event => {
+                event.preventDefault();
+                select.prop('hidden', !select.prop('hidden'));
+                if (!select.prop('hidden')) {
+                    select.trigger('focus');
+                }
+            });
+
+            label.append(pencil);
+            label.parent().append(select);
+        });
+    }
+
+    function updateBandSwatch(key) {
+        const color = $(`#${key}`).val();
+        $(`label[for=${bandColors[key].input}] svg`).attr('fill', swatchColors[color]);
     }
 
     function addButtonsHandlers() {
@@ -1076,6 +1136,9 @@
         json['high_mgdl'] = bg_high;
         json['low_urgent_mgdl'] = bg_urgent_low;
         json['high_urgent_mgdl'] = bg_urgent_high;
+        Object.keys(bandColors).forEach(key => {
+            json[key] = $(`#${key}`).val();
+        });
 
         //Device settings
         var brightness = parseInt($('#brightness_level').val());
@@ -1417,6 +1480,11 @@
             $('#bg_urgent_low').val(mgdlToSelectedUnits(bg_urgent_low));
             $('#bg_urgent_high').val(mgdlToSelectedUnits(bg_urgent_high));
         }
+        Object.entries(bandColors).forEach(([key, band]) => {
+            const color = Object.keys(swatchColors).includes(json[key]) ? json[key] : band.color;
+            $(`#${key}`).val(color);
+            updateBandSwatch(key);
+        });
 
         // Device settings
         $('#brightness_level').val(json['brightness_level']);

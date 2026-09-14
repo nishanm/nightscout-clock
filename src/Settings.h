@@ -21,6 +21,12 @@ public:
     int bg_high_warn_limit;
     int bg_low_urgent_limit;
     int bg_high_urgent_limit;
+    // Glucose band colors, edited next to the limits in the Web UI; the defaults are the classic ones.
+    DISPLAY_COLOR bg_color_urgent_low = DISPLAY_COLOR::RED;
+    DISPLAY_COLOR bg_color_low = DISPLAY_COLOR::YELLOW;
+    DISPLAY_COLOR bg_color_normal = DISPLAY_COLOR::GREEN;
+    DISPLAY_COLOR bg_color_high = DISPLAY_COLOR::YELLOW;
+    DISPLAY_COLOR bg_color_urgent_high = DISPLAY_COLOR::RED;
     BRIGHTNES_MODE brightness_mode;
     int brightness_level;
     int default_clockface;

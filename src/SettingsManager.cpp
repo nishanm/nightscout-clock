@@ -250,6 +250,18 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.data_old_color = displayColorFromString(
         (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
 
+    // Glucose band colors; a missing key keeps the classic color, so older configs look unchanged.
+    settings.bg_color_urgent_low =
+        displayColorFromString((*doc)["bg_color_urgent_low"].as<String>(), DISPLAY_COLOR::RED);
+    settings.bg_color_low =
+        displayColorFromString((*doc)["bg_color_low"].as<String>(), DISPLAY_COLOR::YELLOW);
+    settings.bg_color_normal =
+        displayColorFromString((*doc)["bg_color_normal"].as<String>(), DISPLAY_COLOR::GREEN);
+    settings.bg_color_high =
+        displayColorFromString((*doc)["bg_color_high"].as<String>(), DISPLAY_COLOR::YELLOW);
+    settings.bg_color_urgent_high =
+        displayColorFromString((*doc)["bg_color_urgent_high"].as<String>(), DISPLAY_COLOR::RED);
+
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
     settings.web_auth_password = (*doc)["web_auth_password"].as<String>();
@@ -383,6 +395,11 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
     (*doc)["data_old_color"] = toString(settings.data_old_color);
+    (*doc)["bg_color_urgent_low"] = toString(settings.bg_color_urgent_low);
+    (*doc)["bg_color_low"] = toString(settings.bg_color_low);
+    (*doc)["bg_color_normal"] = toString(settings.bg_color_normal);
+    (*doc)["bg_color_high"] = toString(settings.bg_color_high);
+    (*doc)["bg_color_urgent_high"] = toString(settings.bg_color_urgent_high);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;

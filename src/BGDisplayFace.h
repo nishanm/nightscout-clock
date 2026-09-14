@@ -41,6 +41,9 @@ protected:
     // Configurable color for old readings and no-data screens;
     // gray can be invisible at minimum brightness.
     uint16_t getDataOldColor() const;
+    // The configured color of a glucose band (set next to the limits in the Web UI);
+    // gray for a reading outside every band.
+    uint16_t getBandColor(BG_LEVEL level) const;
 };
 
 #endif
