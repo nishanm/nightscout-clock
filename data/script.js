@@ -22,23 +22,24 @@
         6: 'Unicorn'
     };
 
-    // Glucose band colors, changed with the pencil beside each band in Glucose-related settings.
-    // Keys are the setting names; swatchColors are dimmer shades so a swatch reads like the LED panel.
-    const bandColors = {
-        bg_color_urgent_low: { input: 'bg_urgent_low', color: 'red' },
-        bg_color_low: { input: 'bg_low', color: 'yellow' },
-        bg_color_normal: { input: 'bg_normal', color: 'green' },
-        bg_color_high: { input: 'bg_high', color: 'yellow' },
-        bg_color_urgent_high: { input: 'bg_urgent_high', color: 'red' }
-    };
+    // Glucose ranges in Glucose-related settings, lowest first. key is the color setting; limit is the
+    // threshold input the range's card edits (the in-range card shows the limits around it instead).
+    const glucoseBands = [
+        { key: 'bg_color_urgent_low', name: 'Urgent low', color: 'red', limit: 'bg_urgent_low', limitLabel: 'Up to' },
+        { key: 'bg_color_low', name: 'Low', color: 'yellow', limit: 'bg_low', limitLabel: 'Up to' },
+        { key: 'bg_color_normal', name: 'In range', color: 'green' },
+        { key: 'bg_color_high', name: 'High', color: 'yellow', limit: 'bg_high', limitLabel: 'From' },
+        { key: 'bg_color_urgent_high', name: 'Urgent high', color: 'red', limit: 'bg_urgent_high', limitLabel: 'From' }
+    ];
+    // The colors the clock offers, with the shade the Web UI paints for each on its dark background.
     const swatchColors = {
-        green: '#008000',
-        yellow: '#8B8000',
-        red: 'darkred',
-        cyan: '#008B8B',
-        blue: '#0000CD',
-        magenta: '#8B008B',
-        white: '#C8C8C8'
+        green: '#2E9E4F',
+        yellow: '#C9B420',
+        red: '#C8373B',
+        cyan: '#1FA7B8',
+        blue: '#3B6FE0',
+        magenta: '#B03BB5',
+        white: '#D8D8D8'
     };
 
     if (window.location.href.indexOf("127.0.0.1") > 0) {
@@ -73,7 +74,7 @@
 
     renderClockFaceControls();
 
-    renderBandColorControls();
+    renderGlucoseBands();
 
     addValidationHandlers();
 
@@ -107,43 +108,98 @@
         });
     }
 
-    function renderBandColorControls() {
-        Object.entries(bandColors).forEach(([key, band]) => {
-            const label = $(`label[for=${band.input}]`);
-            const select = $('<select>', {
-                class: 'form-select form-select-sm mt-2',
-                id: key,
-                hidden: true,
-                'aria-label': `${label.text().trim()} color`
-            });
-            Object.keys(swatchColors).forEach(color => {
-                $('<option>', { value: color, text: color.charAt(0).toUpperCase() + color.slice(1) })
-                    .appendTo(select);
-            });
-            select.on('change', () => updateBandSwatch(key));
-
-            const pencil = $('<button>', {
-                type: 'button',
-                class: 'btn btn-link btn-sm p-0 ms-1 align-baseline',
-                title: 'Change color',
-                'aria-label': 'Change color'
-            }).append($('<i>', { class: 'bi bi-pencil' }));
-            pencil.on('click', event => {
-                event.preventDefault();
+    // One card per glucose range: its color (behind a pencil), the limit it ends at, and the range it covers.
+    function renderGlucoseBands() {
+        const cards = $('#glucose_bands').empty();
+        glucoseBands.forEach(band => {
+            const colorOptions = Object.keys(swatchColors)
+                .map(color => `<option value="${color}">${color.charAt(0).toUpperCase() + color.slice(1)}</option>`)
+                .join('');
+            const limit = band.limit
+                ? `<label for="${band.limit}" class="form-label small text-body-secondary mb-1">${band.limitLabel}</label>
+                    <div class="input-group has-validation">
+                        <input type="text" class="form-control" id="${band.limit}" required />
+                        <span class="input-group-text glucose-unit"></span>
+                        <div class="invalid-feedback">Enter a valid ${band.name.toLowerCase()} limit</div>
+                    </div>
+                    <div class="small text-body-secondary mt-2 glucose-band-range"></div>`
+                : `<div class="small text-body-secondary mb-1">Between the low and high limits</div>
+                    <div class="fs-4 glucose-band-range"></div>`;
+            const col = $('<div class="col">').append(`
+                <div class="border rounded-3 h-100 p-3" id="${band.key}_card">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="rounded-circle me-2 glucose-band-dot" style="width: 0.85rem; height: 0.85rem"></span>
+                        <span class="fw-semibold flex-grow-1">${band.name}</span>
+                        <button type="button" class="btn btn-sm btn-link p-0" title="Change ${band.name.toLowerCase()} color"
+                            aria-label="Change ${band.name.toLowerCase()} color"><i class="bi bi-pencil"></i></button>
+                    </div>
+                    <select class="form-select form-select-sm mb-2" id="${band.key}" aria-label="${band.name} color"
+                        hidden>${colorOptions}</select>
+                    ${limit}
+                </div>`);
+            const select = col.find('select');
+            col.find('button').on('click', () => {
                 select.prop('hidden', !select.prop('hidden'));
                 if (!select.prop('hidden')) {
                     select.trigger('focus');
                 }
             });
-
-            label.append(pencil);
-            label.parent().append(select);
+            select.val(band.color).on('change', updateGlucoseBands);
+            cards.append(col);
         });
+        $('#bg_urgent_low, #bg_low, #bg_high, #bg_urgent_high').on('input', updateGlucoseBands);
+        updateGlucoseBands();
     }
 
-    function updateBandSwatch(key) {
-        const color = $(`#${key}`).val();
-        $(`label[for=${bandColors[key].input}] svg`).attr('fill', swatchColors[color]);
+    // Repaints the range bar, card colors, unit suffixes and range readouts from the current form values.
+    function updateGlucoseBands() {
+        const mmol = $('#bg_units').val() === 'mmol';
+        $('.glucose-unit').text(mmol ? 'mmol/L' : 'mg/dL');
+
+        const limits = ['bg_urgent_low', 'bg_low', 'bg_high', 'bg_urgent_high'].map(id => parseFloat($(`#${id}`).val()));
+        const [urgentLow, low, high, urgentHigh] = limits;
+        const ordered = limits.every(Number.isFinite) && urgentLow < low && low < high && high < urgentHigh;
+        const show = value => (Number.isFinite(value) ? String(value) : '?');
+        const ranges = [
+            `Below ${show(urgentLow)}`,
+            `${show(urgentLow)} – ${show(low)}`,
+            `${show(low)} – ${show(high)}`,
+            `${show(high)} – ${show(urgentHigh)}`,
+            `Above ${show(urgentHigh)}`
+        ];
+
+        // Segment shares follow the limits on a fixed glucose scale, with a floor so a narrow range stays
+        // visible; equal shares until the limits make sense. Each limit's value sits under its join.
+        const [scaleMin, scaleMax] = mmol ? [2.2, 22.2] : [40, 400];
+        const clamp = value => Math.min(Math.max(value, scaleMin), scaleMax);
+        const edges = [scaleMin, ...limits, scaleMax].map(clamp);
+        const widths = glucoseBands.map((_, index) => (ordered ? Math.max(edges[index + 1] - edges[index], 0) : 1));
+        const widthSum = widths.reduce((sum, width) => sum + width, 0);
+        const floored = widths.map(width => Math.max(width / widthSum, 0.08));
+        const flooredSum = floored.reduce((sum, share) => sum + share, 0);
+        const shares = floored.map(share => (share / flooredSum) * 100);
+
+        const bar = $('#glucose_band_bar').empty();
+        const ticks = $('#glucose_band_ticks').empty();
+        let offset = 0;
+        glucoseBands.forEach((band, index) => {
+            const color = swatchColors[$(`#${band.key}`).val()] || swatchColors[band.color];
+            const card = $(`#${band.key}_card`);
+            // .border sets the border with !important, so the colored top edge must be important too.
+            card[0].style.setProperty('border-top', `4px solid ${color}`, 'important');
+            card.find('.glucose-band-dot').css('background-color', color);
+            card.find('.glucose-band-range').text(ranges[index]);
+
+            $('<div>', { title: `${band.name}: ${ranges[index]}` })
+                .css({ 'background-color': color, width: `${shares[index]}%` })
+                .appendTo(bar);
+            offset += shares[index];
+            if (index < limits.length) {
+                $('<span>', { class: 'position-absolute', text: show(limits[index]) })
+                    .css({ left: `${offset}%`, transform: 'translateX(-50%)' })
+                    .appendTo(ticks);
+            }
+        });
     }
 
     function addButtonsHandlers() {
@@ -1136,8 +1192,8 @@
         json['high_mgdl'] = bg_high;
         json['low_urgent_mgdl'] = bg_urgent_low;
         json['high_urgent_mgdl'] = bg_urgent_high;
-        Object.keys(bandColors).forEach(key => {
-            json[key] = $(`#${key}`).val();
+        glucoseBands.forEach(band => {
+            json[band.key] = $(`#${band.key}`).val();
         });
 
         //Device settings
@@ -1285,9 +1341,7 @@
         valid &= validate($('#bg_urgent_low'), bgValidationPattternSelector());
         valid &= validate($('#bg_urgent_high'), bgValidationPattternSelector());
 
-        if (valid) {
-            $('#bg_normal').val(`${$('#bg_low').val()}...${$('#bg_high').val()}`);
-        }
+        updateGlucoseBands();
 
         const bgUnits = $('#bg_units').val();
         if (bgUnits === "mgdl" || bgUnits === "mmol") {
@@ -1480,11 +1534,11 @@
             $('#bg_urgent_low').val(mgdlToSelectedUnits(bg_urgent_low));
             $('#bg_urgent_high').val(mgdlToSelectedUnits(bg_urgent_high));
         }
-        Object.entries(bandColors).forEach(([key, band]) => {
-            const color = Object.keys(swatchColors).includes(json[key]) ? json[key] : band.color;
-            $(`#${key}`).val(color);
-            updateBandSwatch(key);
+        glucoseBands.forEach(band => {
+            const color = Object.keys(swatchColors).includes(json[band.key]) ? json[band.key] : band.color;
+            $(`#${band.key}`).val(color);
         });
+        updateGlucoseBands();
 
         // Device settings
         $('#brightness_level').val(json['brightness_level']);

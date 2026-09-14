@@ -381,8 +381,8 @@
                         </button>
                     </h5>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-2">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-sm-4 col-lg-3">
                                 <label for="bg_units" class="form-label">Blood glucose units</label>
                                 <select class="form-select" id="bg_units" required>
                                     <option value="">Choose...</option>
@@ -393,73 +393,18 @@
                                     Please select blood glucose units type
                                 </div>
                             </div>
-                            <div class="col-sm-2">
-                                <label for="bg_urgent_low" class="form-label">
-                                    BG Urgent Low value
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="darkred"
-                                        class="bi bi-square-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                </label>
-
-                                <input type="text" class="form-control" id="bg_urgent_low" placeholder="" required />
-                                <div class="invalid-feedback">
-                                    BG Urgent Low value is required
+                            <div class="col-sm-8 col-lg-9">
+                                <div class="form-text mt-0 mb-2">
+                                    The clock colors your glucose by these ranges. Set where each range ends, and use
+                                    the pencil to change its color.
                                 </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <label for="bg_low" class="form-label">
-                                    BG Low value
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#8B8000"
-                                        class="bi bi-square-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                </label>
-                                <input type="text" class="form-control" id="bg_low" placeholder="" required />
-                                <div class="invalid-feedback">BG Low value is required</div>
-                            </div>
-                            <div class="col-sm-2">
-                                <label for="bg_normal" class="form-label">
-                                    Normal interval
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#008000"
-                                        class="bi bi-square-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                </label>
-                                <input type="text" class="form-control" id="bg_normal" placeholder="" disabled />
-                            </div>
-                            <div class="col-sm-2">
-                                <label for="bg_high" class="form-label">
-                                    BG High value
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#8B8000"
-                                        class="bi bi-square-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                </label>
-                                <input type="text" class="form-control" id="bg_high" placeholder="" required />
-                                <div class="invalid-feedback">
-                                    BG High value is required
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <label for="bg_urgent_high" class="form-label">
-                                    BG Urgent High value
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="darkred"
-                                        class="bi bi-square-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                </label>
-                                <input type="text" class="form-control" id="bg_urgent_high" placeholder="" required />
-                                <div class="invalid-feedback">
-                                    BG Urgent High value is required
-                                </div>
+                                <div class="d-flex rounded-pill overflow-hidden" id="glucose_band_bar"
+                                    style="height: 0.75rem; gap: 2px" aria-hidden="true"></div>
+                                <div class="position-relative small text-body-secondary mt-1" id="glucose_band_ticks"
+                                    style="height: 1.25rem" aria-hidden="true"></div>
                             </div>
                         </div>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3" id="glucose_bands"></div>
                     </div>
                 </div>
                 <br />
