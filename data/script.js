@@ -19,7 +19,8 @@
         3: 'Big text',
         4: 'Value and delta',
         5: 'Current time and BG value',
-        6: 'Unicorn'
+        6: 'Unicorn',
+        7: 'Time only'
     };
 
     if (window.location.href.indexOf("127.0.0.1") > 0) {

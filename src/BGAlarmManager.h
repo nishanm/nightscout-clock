@@ -28,6 +28,8 @@ public:
     void setup();
     void tick();
     void snoozeAlarm();
+    // True while a reading is in an enabled alarm's range, snoozed or not.
+    bool isAlarmActive() const;
 };
 
 extern BGAlarmManager_& bgAlarmManager;
