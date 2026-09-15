@@ -233,11 +233,13 @@ void BGDisplayManager_::maybeRrefreshScreen(bool force) {
         DEBUG_PRINTLN("We have new data");
         bgDisplayManager.showData(bgSourceManager.getInstance().getGlucoseData());
     } else {
-        // We refresh the display every minue trying to match the exact :00 second
+        // We refresh the display every minue trying to match the exact :00 second,
+        // or every second for faces that ask for it
         if (force) {
             runRenderCycle(RenderReason::FORCED, timeInfo);
         } else if (
-            timeInfo.tm_sec == 0 && currentEpoch > lastRefreshEpoch ||
+            (timeInfo.tm_sec == 0 || currentFace->ticksEverySecond()) &&
+                currentEpoch > lastRefreshEpoch ||
             currentEpoch - lastRefreshEpoch > 60) {
             runRenderCycle(RenderReason::TIME_TICK, timeInfo);
         }
