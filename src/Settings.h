@@ -1,8 +1,24 @@
+#ifndef Settings_h
+#define Settings_h
+
 #include <Arduino.h>
 
 #include <vector>
 
+#include "SettingsAlarm.h"
 #include "enums.h"
+
+// Big text face: the value takes early_stale_color once a reading is early_stale_minutes old.
+struct BigTextFaceSettings {
+    bool early_stale_enabled = false;
+    DISPLAY_COLOR early_stale_color = DISPLAY_COLOR::CYAN;
+    int early_stale_minutes = 6;
+};
+
+// Simple (dark) face: the color of the number while the reading is fresh.
+struct SimpleDarkFaceSettings {
+    DISPLAY_COLOR value_color = DISPLAY_COLOR::WHITE;
+};
 
 class Settings {
 public:
@@ -21,7 +37,7 @@ public:
     int brightness_level;
     int default_clockface;
     bool face_cycle_enabled = false;
-    std::vector<int> face_cycle_faces;
+    std::vector<int> inactive_faces;
     int face_cycle_interval_seconds = 60;
     BG_SOURCE bg_source;
     String dexcom_username;
@@ -39,15 +55,15 @@ public:
     bool alarm_urgent_low_enabled;
     int alarm_urgent_low_mgdl;
     int alarm_urgent_low_snooze_minutes;
-    String alarm_urgent_low_silence_interval;
+    std::vector<AlertWindow> alarm_urgent_low_alert_windows;
     bool alarm_low_enabled;
     int alarm_low_mgdl;
     int alarm_low_snooze_minutes;
-    String alarm_low_silence_interval;
+    std::vector<AlertWindow> alarm_low_alert_windows;
     bool alarm_high_enabled;
     int alarm_high_mgdl;
     int alarm_high_snooze_minutes;
-    String alarm_high_silence_interval;
+    std::vector<AlertWindow> alarm_high_alert_windows;
     String alarm_high_melody;
     String alarm_low_melody;
     String alarm_urgent_low_melody;
@@ -61,7 +77,13 @@ public:
     bool custom_nodatatimer_enable;
     int custom_nodatatimer;
     int bg_data_too_old_threshold_minutes = 20;
+    DISPLAY_COLOR data_old_color = DISPLAY_COLOR::GRAY;
+    BigTextFaceSettings face_big_text;
+    SimpleDarkFaceSettings face_simple_dark;
     bool alarm_intensive_mode;
+    int alarm_repeat_interval_seconds = 300;
     bool web_auth_enable;
     String web_auth_password;
 };
+
+#endif
