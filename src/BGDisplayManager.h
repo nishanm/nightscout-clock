@@ -82,7 +82,9 @@ private:
     unsigned long lastFaceCycleMillis = 0;
     std::vector<int> faceCycleFaces;
 
+    void configureGlucoseIntervals();
     void configureFaceCycle();
+    int configuredFaceId() const;
     void updateFaceCycle();
     void resetFaceCycleTimer();
     void runRenderCycle(RenderReason reason, const tm& timeInfo);
@@ -91,6 +93,7 @@ private:
 public:
     static BGDisplayManager_& getInstance();
     void setup();
+    void reloadSettings(const Settings& previous);
     void tick();
     void maybeRrefreshScreen(bool force = false);
     void showData(std::list<GlucoseReading> glucoseReadings);

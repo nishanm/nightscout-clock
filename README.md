@@ -83,6 +83,8 @@ While cycling is enabled, the left and right buttons move only between the selec
 
 <img alt="Nightscout Clock configuration web interface" src="docs/images/web-ui.png" />
 
+Saved settings apply immediately. Changing the WiFi, host name or data source restarts the clock, and the Save button says so.
+
 ### Alarm settings
 
 High, low, and urgent-low alarms each have their own threshold, snooze duration, sound, and optional alert windows in the Web UI.

@@ -20,21 +20,7 @@ BGDisplayManager_& BGDisplayManager_::getInstance() {
 BGDisplayManager_& bgDisplayManager = bgDisplayManager.getInstance();
 
 void BGDisplayManager_::setup() {
-    glucoseIntervals = GlucoseIntervals();
-    /// TODO: Add urgent values to settings
-
-    glucoseIntervals.addInterval(1, SettingsManager.settings.bg_low_urgent_limit, BG_LEVEL::URGENT_LOW);
-    glucoseIntervals.addInterval(
-        SettingsManager.settings.bg_low_urgent_limit + 1, SettingsManager.settings.bg_low_warn_limit - 1,
-        BG_LEVEL::WARNING_LOW);
-    glucoseIntervals.addInterval(
-        SettingsManager.settings.bg_low_warn_limit, SettingsManager.settings.bg_high_warn_limit,
-        BG_LEVEL::NORMAL);
-    glucoseIntervals.addInterval(
-        SettingsManager.settings.bg_high_warn_limit, SettingsManager.settings.bg_high_urgent_limit - 1,
-        BG_LEVEL::WARNING_HIGH);
-    glucoseIntervals.addInterval(
-        SettingsManager.settings.bg_high_urgent_limit, 401, BG_LEVEL::URGENT_HIGH);
+    configureGlucoseIntervals();
 
     faces.push_back(new BGDisplayFaceSimple());
     facesNames[0] = "Simple";
@@ -59,17 +45,44 @@ void BGDisplayManager_::setup() {
 
     configureFaceCycle();
 
-    if (faceCycleActive) {
-        currentFaceIndex = faceCycleFaces.front();
-    } else {
-        currentFaceIndex = SettingsManager.settings.default_clockface;
-    }
-
-    if (currentFaceIndex < 0 || static_cast<size_t>(currentFaceIndex) >= faces.size()) {
-        currentFaceIndex = 0;
-    }
-
+    currentFaceIndex = configuredFaceId();
     currentFace = (faces[currentFaceIndex]);
+}
+
+// The face to start on: the first face of the cycle, otherwise the default face.
+int BGDisplayManager_::configuredFaceId() const {
+    int faceId = faceCycleActive ? faceCycleFaces.front() : SettingsManager.settings.default_clockface;
+    return faceId >= 0 && static_cast<size_t>(faceId) < faces.size() ? faceId : 0;
+}
+
+void BGDisplayManager_::configureGlucoseIntervals() {
+    glucoseIntervals = GlucoseIntervals();
+    /// TODO: Add urgent values to settings
+
+    glucoseIntervals.addInterval(1, SettingsManager.settings.bg_low_urgent_limit, BG_LEVEL::URGENT_LOW);
+    glucoseIntervals.addInterval(
+        SettingsManager.settings.bg_low_urgent_limit + 1, SettingsManager.settings.bg_low_warn_limit - 1,
+        BG_LEVEL::WARNING_LOW);
+    glucoseIntervals.addInterval(
+        SettingsManager.settings.bg_low_warn_limit, SettingsManager.settings.bg_high_warn_limit,
+        BG_LEVEL::NORMAL);
+    glucoseIntervals.addInterval(
+        SettingsManager.settings.bg_high_warn_limit, SettingsManager.settings.bg_high_urgent_limit - 1,
+        BG_LEVEL::WARNING_HIGH);
+    glucoseIntervals.addInterval(
+        SettingsManager.settings.bg_high_urgent_limit, 401, BG_LEVEL::URGENT_HIGH);
+}
+
+// The face moves only when the face settings changed; the redraw shows new colours, units and limits.
+void BGDisplayManager_::reloadSettings(const Settings& previous) {
+    configureGlucoseIntervals();
+    configureFaceCycle();
+
+    bool faceSettingsChanged =
+        previous.default_clockface != SettingsManager.settings.default_clockface ||
+        previous.face_cycle_enabled != SettingsManager.settings.face_cycle_enabled ||
+        previous.face_cycle_faces != SettingsManager.settings.face_cycle_faces;
+    setFace(faceSettingsChanged ? configuredFaceId() : currentFaceIndex);
 }
 
 void BGDisplayManager_::configureFaceCycle() {

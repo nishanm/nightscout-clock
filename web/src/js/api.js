@@ -114,9 +114,9 @@ const api = (() => {
     const patients = () => request("GET", "/api/llu/patients")
     const reset = () => request("POST", "/api/reset", { body: {}, timeout: 4000 })
 
-    // Save the whole config, then restart the clock so it loads it. In setup mode the clock restarts onto the
-    // home WiFi and its setup network goes away, so there is nothing to wait for.
-    function saveSettings(config, { setupMode = false, onPhase = () => {} } = {}) {
+    // Save the whole config, then restart the clock if asked. In setup mode the clock restarts onto the home WiFi
+    // and its setup network goes away, so there is nothing to wait for.
+    function saveSettings(config, { restart = true, setupMode = false, onPhase = () => {} } = {}) {
         return exclusive(async () => {
             onPhase("saving")
             try {
@@ -129,6 +129,7 @@ const api = (() => {
             } catch (e) {
                 return { ok: false, error: `${e.message} The settings may not have been saved; save again.` }
             }
+            if (!restart) return { ok: true }
             onPhase("restarting")
             try { await reset() } catch (e) { /* the clock may restart before it answers */ }
             if (setupMode) return { ok: true, setupMode: true }

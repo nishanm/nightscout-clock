@@ -60,6 +60,14 @@ const MELODY_PRESETS = [
     ["Long tone", "longtone:d=1,o=5,b=90:a"],
 ]
 
+// The clock applies a save at once, but reads WiFi, host name and data source only when it starts.
+const RESTART_KEYS = [
+    "ssid", "password", "additional_wifi_enable", "additional_wifi_type", "additional_ssid", "additional_wifi_username",
+    "additional_wifi_password", "custom_hostname_enable", "custom_hostname", "data_source", "dexcom_username",
+    "dexcom_password", "dexcom_server", "nightscout_url", "api_secret", "nightscout_simplified_api", "librelinkup_email",
+    "librelinkup_password", "librelinkup_region", "librelinkup_patient_id", "medtrum_email", "medtrum_password",
+]
+
 // Brightness: 1-10 manual, 100 "Auto: balanced", 101 "Auto: for darker rooms".
 const brightnessMode = level => (level === 101 ? "auto_dimmed" : level === 100 ? "auto_linear" : "manual")
 
