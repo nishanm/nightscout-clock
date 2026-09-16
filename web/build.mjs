@@ -15,10 +15,12 @@ const SRC = path.join(HERE, "src");
 const DATA = path.join(ROOT, "data");
 
 // Order matters: later files use what earlier ones define.
-const JS = ["util.js", "api.js", "schema.js", "form.js", "cards.js", "app.js"];
+const JS = ["util.js", "api.js", "schema.js", "form.js", "cards.js", "preview.js", "app.js"];
 
 // Gzipped page budget. The whole LittleFS partition is 1 MB.
 const BUDGET_BYTES = 40000;
+// The clock preview's emulator, built by web/emulator/build.sh and loaded after the page.
+const EMULATOR_BUDGET_BYTES = 70000;
 
 function gzip(buf) {
     const out = zlib.gzipSync(buf, { level: 9 });
@@ -42,9 +44,11 @@ fs.writeFileSync(path.join(DATA, "index.html.gz"), page);
 const total = fs.readdirSync(DATA, { recursive: true })
     .map(f => path.join(DATA, f)).filter(f => fs.statSync(f).isFile())
     .reduce((n, f) => n + fs.statSync(f).size, 0);
+const emulator = fs.statSync(path.join(DATA, "clockemu.js.gz")).size;
 console.log(`index.html.gz ${page.length} B (budget ${BUDGET_BYTES} B)`);
+console.log(`clockemu.js.gz ${emulator} B (budget ${EMULATOR_BUDGET_BYTES} B)`);
 console.log(`data/ total   ${total} B`);
-if (page.length > BUDGET_BYTES) {
-    console.error("index.html.gz is over budget");
+if (page.length > BUDGET_BYTES || emulator > EMULATOR_BUDGET_BYTES) {
+    console.error("over budget");
     process.exitCode = 1;
 }

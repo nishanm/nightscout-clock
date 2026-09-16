@@ -32,6 +32,13 @@ My computer is running linux, but you can use Windows or MacOS as well, there ar
 The web UI source is in `web/src/`. After changing it, run `node web/build.mjs` to rebuild
 `data/index.html.gz` and commit the rebuilt file.
 
+The web UI's clock preview runs the display code as `data/clockemu.js.gz`. After changing a face or
+other display code, build the `ulanzi` environment once, install
+[emsdk](https://emscripten.org/docs/getting_started/downloads.html) 6.0.9
+(`./emsdk install 6.0.9 && ./emsdk activate 6.0.9`), run `EMSDK=<emsdk folder> web/emulator/build.sh`
+and `node web/build.mjs`, and commit `data/clockemu.js.gz`. An unchanged checkout rebuilt with the same
+PlatformIO libraries gives the same file, so `git status` shows whether the committed one matches.
+
 `scripts/screenshot_web_ui.py` renders the current `data/` web UI in headless Chromium
 and saves a full-page PNG to `docs/images/web-ui.png`, the image used in the README.
 It uses factory defaults plus sample WiFi, Nightscout, and status data. No clock or
