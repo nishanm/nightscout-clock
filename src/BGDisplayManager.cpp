@@ -103,7 +103,7 @@ std::map<int, String> BGDisplayManager_::getFaces() { return facesNames; }
 
 int BGDisplayManager_::getCurrentFaceId() { return currentFaceIndex; }
 
-GlucoseIntervals BGDisplayManager_::getGlucoseIntervals() { return glucoseIntervals; }
+const GlucoseIntervals& BGDisplayManager_::getGlucoseIntervals() const { return glucoseIntervals; }
 
 void BGDisplayManager_::setFace(int id) {
     if (id < 0 || static_cast<size_t>(id) >= faces.size()) {
@@ -177,6 +177,26 @@ void BGDisplayManager_::updateFaceCycle() {
 void BGDisplayManager_::tick() {
     updateFaceCycle();
     maybeRrefreshScreen();
+    if (!MATRIX_OFF && drawAnimationFrame(lastRenderedDataWasOld, false)) {
+        DisplayManager.update();
+    }
+}
+
+// Draws the moving part of an animated face for the current step while the reading is fresh.
+// Returns false when there is nothing to draw, or `redraw` is false and this step is already shown.
+bool BGDisplayManager_::drawAnimationFrame(bool dataIsOld, bool redraw) {
+    const unsigned long stepMillis = currentFace->getAnimationStepMillis();
+    if (stepMillis == 0 || dataIsOld || displayedReadings.empty()) {
+        return false;
+    }
+
+    const unsigned long frame = millis() / stepMillis;
+    if (frame == lastAnimationFrame && !redraw) {
+        return false;
+    }
+    lastAnimationFrame = frame;
+    currentFace->showAnimationFrame(displayedReadings, frame);
+    return true;
 }
 
 void BGDisplayManager_::commitRenderedState(bool dataIsOld) {
@@ -202,6 +222,7 @@ void BGDisplayManager_::runRenderCycle(RenderReason reason, const tm& timeInfo) 
             DisplayManager.clearMatrix();
             if (displayedReadings.size() > 0) {
                 currentFace->showReadings(displayedReadings, dataIsOld);
+                drawAnimationFrame(dataIsOld, true);
             } else {
                 currentFace->showNoData();
             }
