@@ -25,7 +25,7 @@ public:
     int brightness_level;
     int default_clockface;
     bool face_cycle_enabled = false;
-    std::vector<int> face_cycle_faces;
+    std::vector<int> inactive_faces;
     int face_cycle_interval_seconds = 60;
     BG_SOURCE bg_source;
     String dexcom_username;
