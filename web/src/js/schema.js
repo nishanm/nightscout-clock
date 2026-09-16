@@ -9,6 +9,7 @@ const FACES = [
     { id: 4, name: "Value and delta" },
     { id: 5, name: "Current time and BG value" },
     { id: 6, name: "Unicorn" },
+    { id: 7, name: "Time only" },
 ]
 
 // "carelink" is not a clock source: choosing it explains the xDrip+ and Nightscout bridge instead.
