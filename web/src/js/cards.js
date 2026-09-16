@@ -69,13 +69,17 @@ function toggleRow(key, title, desc) {
         el("label.switch", input, el("span")))
 }
 
-function segmented(key, options, { numeric = false, label } = {}) {
-    const box = el("div.seg", { role: "group", "aria-label": label, id: idFor(key) })
-    const paint = () => $$("button", box).forEach(b => b.setAttribute("aria-pressed", String(String(form.get(key)) === b.dataset.value)))
+// `prop` picks one value inside an object setting, such as a face's settings block; its field is `${key}_${prop}`.
+function segmented(key, options, { numeric = false, label, prop } = {}) {
+    const name = prop ? `${key}_${prop}` : key
+    const get = () => (prop ? (form.get(key) || {})[prop] : form.get(key))
+    const put = v => form.set(key, prop ? { ...form.get(key), [prop]: v } : v)
+    const box = el("div.seg", { role: "group", "aria-label": label, id: idFor(name) })
+    const paint = () => $$("button", box).forEach(b => b.setAttribute("aria-pressed", String(String(get()) === b.dataset.value)))
     for (const [value, text] of options) {
         box.append(el("button", {
             type: "button", dataset: { value: String(value) },
-            onclick: () => { form.set(key, numeric ? Number(value) : String(value)); form.touch(key); paint() },
+            onclick: () => { put(numeric ? Number(value) : String(value)); form.touch(name); paint() },
         }, text))
     }
     paint()
@@ -172,7 +176,45 @@ function facesCard() {
     return card("Clock faces", null, el("div.stack", faces, defaultFace, el("hr.divider"),
         toggleRow("face_cycle_enabled", "Cycle through the active faces automatically",
             "Cycling needs at least two active faces. The default face applies only when cycling is off."),
-        interval), { id: "card_faces" })
+        interval, faceDrawers()), { id: "card_faces" })
+}
+
+// Settings that belong to one face, by face id, shown in a drawer while that face is active.
+const FACE_DRAWERS = { 3: bigTextSettings }
+
+function faceDrawers() {
+    return reactive(["inactive_faces"], () => {
+        const active = activeFaceIds(form.get("inactive_faces"))
+        const faces = FACES.filter(f => FACE_DRAWERS[f.id] && active.includes(f.id))
+        if (!faces.length) return el("span", { hidden: true })
+        return el("div.stack", el("hr.divider"), ...faces.map(f => drawer(f.name, FACE_DRAWERS[f.id]())))
+    })
+}
+
+// Collapsed until Show is pressed, and opened when a setting inside needs attention.
+function drawer(title, body) {
+    const panel = el("div.stack", { hidden: !ui.openDrawers.has(title) }, body)
+    const toggle = el("button.btn.sm", { type: "button" })
+    const setOpen = open => {
+        panel.hidden = !open
+        toggle.textContent = open ? "Hide" : "Show"
+        toggle.setAttribute("aria-expanded", String(open))
+        open ? ui.openDrawers.add(title) : ui.openDrawers.delete(title)
+    }
+    toggle.addEventListener("click", () => setOpen(panel.hidden))
+    setOpen(!panel.hidden)
+    const off = form.on("errors", () => {
+        if (!panel.isConnected) return off()
+        if (panel.hidden && $(".invalid", panel)) setOpen(true)
+    })
+    return el("div.drawer", el("div.row.spread", el("h3", title), toggle), panel)
+}
+
+function bigTextSettings() {
+    return el("div.stack",
+        field("face_big_text_early_stale_color", "Color when a reading is late", segmented("face_big_text", EARLY_STALE_COLORS, { prop: "early_stale_color", label: "Color when a reading is late" }),
+            "Big text shows the number in this color once the newest reading is late, until the clock shows data as old. Off keeps the usual glucose colors."),
+        field("face_big_text_early_stale_minutes", "Late after", segmented("face_big_text", EARLY_STALE_MINUTES, { numeric: true, prop: "early_stale_minutes", label: "Late after" })))
 }
 
 function brightnessCard() {
@@ -558,7 +600,7 @@ function versionStatusNodes() {
 
 // ---------- tabs ----------
 const TABS = { display: displayTab, glucose: glucoseTab, alarms: alarmsTab, system: systemTab }
-const ui = { tab: "display", timezones: null, timezoneNames: null, status: null, patients: null, patientsLoading: false, versions: {} }
+const ui = { tab: "display", timezones: null, timezoneNames: null, status: null, patients: null, patientsLoading: false, versions: {}, openDrawers: new Set() }
 
 function rerenderTab(name) {
     const panel = $(`#tab_${name}`)
