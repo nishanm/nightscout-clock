@@ -17,7 +17,7 @@ const form = (() => {
 
     function reset(config) {
         draft = clone(config)
-        ctx.openNetwork = !String(draft.password || "").trim() && !!String(draft.ssid || "").trim()
+        ctx.openNetwork = isOpenNetwork(draft)
         touched.clear()
         showAll = false
         revalidate()
@@ -32,6 +32,9 @@ const form = (() => {
             reset(original)
         },
         discard() { reset(original) },
+        // Replaces the working copy; changes are still counted against the clock's settings.
+        edit(config) { reset(normalizeLoaded(config)) },
+        get saved() { return original },
         get loaded() { return !!draft },
         get(key) { return draft ? draft[key] : undefined },
         set(key, value) {

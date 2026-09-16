@@ -237,6 +237,7 @@ async function start() {
 
     form.on("change", renderDirty)
     form.on("load", renderDirty)
+    form.on("load", () => { ui.fileReport = null })
     form.on("errors", () => applyErrors())
     api.on("status", renderStatus)
     api.on("status-error", renderStatusError)
