@@ -138,33 +138,40 @@ function displayTab() {
 }
 
 function facesCard() {
-    const faces = reactive(["default_face", "face_cycle_enabled", "face_cycle_faces"], () => {
+    const faces = reactive(["default_face", "face_cycle_enabled", "inactive_faces"], () => {
         const cycling = !!form.get("face_cycle_enabled")
-        const cycle = form.get("face_cycle_faces") || []
-        const list = el("div.faces", { role: "group", "aria-label": cycling ? "Faces to cycle" : "Default face" })
+        const inactive = form.get("inactive_faces") || []
+        const list = el("div.faces", { role: "group", "aria-label": "Active clock faces" })
         for (const f of FACES) {
-            const on = cycling ? cycle.includes(f.id) : form.get("default_face") === f.id
-            const status = cycling ? (on ? `✓ ${cycle.indexOf(f.id) + 1} in cycle` : "Not in cycle") : on ? "✓ Default" : ""
+            const on = !inactive.includes(f.id)
+            const status = !on ? "Not active" : !cycling && form.get("default_face") === f.id ? "✓ Active, default" : "✓ Active"
             list.append(el("button.face", {
                 type: "button", "aria-pressed": String(on), dataset: { face: f.id },
                 onclick: () => {
-                    if (!cycling) return form.set("default_face", f.id)
-                    form.set("face_cycle_faces", on ? cycle.filter(x => x !== f.id) : [...cycle, f.id].sort((a, b) => a - b))
-                    form.touch("face_cycle_faces")
+                    const next = on ? [...inactive, f.id].sort((a, b) => a - b) : inactive.filter(x => x !== f.id)
+                    const active = activeFaceIds(next)
+                    // The default face is one of the active ones, so it moves before the list it is picked from.
+                    if (active.length && !active.includes(form.get("default_face"))) form.set("default_face", active[0])
+                    form.set("inactive_faces", next)
+                    form.touch("inactive_faces")
                 },
-            }, el("span", f.name), status ? el("span.face-status", status) : null))
+            }, el("span", f.name), el("span.face-status", status)))
         }
-        return el("div.field", { dataset: { field: cycling ? "face_cycle_faces" : "default_face" } },
-            el("p.help", cycling ? "Tap faces to add them to the cycle. Select at least two; they cycle in the order shown."
-                : "Tap a face to make it the default."),
+        return el("div.field", { dataset: { field: "inactive_faces" } },
+            el("p.help", "Tap the faces you use. The left and right buttons move only between these, and cycling runs through them in the order shown."),
             list, el("p.err", { hidden: true }))
+    })
+    const defaultFace = reactive(["face_cycle_enabled", "inactive_faces"], () => {
+        if (form.get("face_cycle_enabled")) return el("span", { hidden: true })
+        const active = FACES.filter(f => activeFaceIds(form.get("inactive_faces")).includes(f.id))
+        return field("default_face", "Face shown by default", selectInput("default_face", active.map(f => [f.id, f.name]), { numeric: true }))
     })
     const interval = reactive(["face_cycle_enabled"], () => form.get("face_cycle_enabled")
         ? field("face_cycle_interval_seconds", "Change face every", segmented("face_cycle_interval_seconds", CYCLE_INTERVALS, { numeric: true, label: "Change face every" }))
         : el("span", { hidden: true }))
-    return card("Clock face", null, el("div.stack", faces, el("hr.divider"),
-        toggleRow("face_cycle_enabled", "Cycle selected clock faces automatically",
-            "The left and right buttons move only between the selected faces while cycling is on. The default face applies only when cycling is off."),
+    return card("Clock faces", null, el("div.stack", faces, defaultFace, el("hr.divider"),
+        toggleRow("face_cycle_enabled", "Cycle through the active faces automatically",
+            "Cycling needs at least two active faces. The default face applies only when cycling is off."),
         interval), { id: "card_faces" })
 }
 

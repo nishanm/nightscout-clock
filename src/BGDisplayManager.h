@@ -80,9 +80,9 @@ private:
     bool faceCycleActive = false;
     bool faceCycleTimerStarted = false;
     unsigned long lastFaceCycleMillis = 0;
-    std::vector<int> faceCycleFaces;
+    std::vector<int> activeFaces;
 
-    void configureFaceCycle();
+    void configureActiveFaces();
     void updateFaceCycle();
     void resetFaceCycleTimer();
     void runRenderCycle(RenderReason reason, const tm& timeInfo);
