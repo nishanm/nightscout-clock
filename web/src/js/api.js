@@ -70,7 +70,10 @@ const api = (() => {
         }, delay)
     }
 
+    let statusStarted = false
     function startStatus() {
+        if (statusStarted) return
+        statusStarted = true
         pollOnce().then(() => schedulePoll())
         document.addEventListener("visibilitychange", () => {
             if (!document.hidden) schedulePoll(250)
@@ -110,6 +113,7 @@ const api = (() => {
     const loadConfig = () => request("GET", "/config.json")
     const version = () => request("GET", "/version.txt?" + Date.now(), { raw: true }).then(r => (r.ok ? r.text() : ""))
     const timezones = () => request("GET", "/tzdata.json", { raw: true }).then(r => r.json())
+    const factoryConfig = () => request("GET", "/config_initial.json", { raw: true }).then(r => (r.ok ? r.text() : ""))
     const tryAlarm = rtttl => request("POST", "/api/alarm", { body: { rtttl } })
     const patients = () => request("GET", "/api/llu/patients")
     const reset = () => request("POST", "/api/reset", { body: {}, timeout: 4000 })
@@ -139,5 +143,8 @@ const api = (() => {
         })
     }
 
-    return { on: events.on, startStatus, saveSettings, authStatus, login, logout, loadConfig, version, timezones, tryAlarm, patients }
+    return {
+        on: events.on, startStatus, saveSettings,
+        authStatus, login, logout, loadConfig, version, factoryConfig, timezones, tryAlarm, patients,
+    }
 })()

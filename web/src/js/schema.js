@@ -2,13 +2,13 @@
 
 // IDs must match the registration order in BGDisplayManager::setup().
 const FACES = [
-    { id: 0, name: "Simple" },
-    { id: 1, name: "Full glucose graph" },
-    { id: 2, name: "Glucose graph and value" },
-    { id: 3, name: "Big text" },
-    { id: 4, name: "Value and delta" },
-    { id: 5, name: "Current time and BG value" },
-    { id: 6, name: "Unicorn" },
+    { id: 0, name: "Simple", about: "Value, trend arrow and age bars" },
+    { id: 1, name: "Full glucose graph", about: "Three hours of readings across the panel" },
+    { id: 2, name: "Glucose graph and value", about: "Recent readings beside the current value" },
+    { id: 3, name: "Big text", about: "Large value, readable across a room" },
+    { id: 4, name: "Value and delta", about: "Value and the change since the last reading" },
+    { id: 5, name: "Current time and BG value", about: "The time and the current value" },
+    { id: 6, name: "Unicorn", about: "A unicorn whose mane shows the glucose colour" },
 ]
 
 // "carelink" is not a clock source: choosing it explains the xDrip+ and Nightscout bridge instead.
@@ -111,6 +111,8 @@ const RX = {
 const isTime = s => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(s)
 const isInt = v => Number.isInteger(v)
 const inOptions = (v, options) => options.some(o => String(o[0]) === String(v))
+// The firmware's no-data time: the custom timer when it is on and 6-60, otherwise 20 minutes.
+const noDataMinutes = c => (c.custom_nodatatimer_enable && isInt(c.custom_nodatatimer) && c.custom_nodatatimer > 5 && c.custom_nodatatimer <= 60 ? c.custom_nodatatimer : 20)
 // A glucose value as typed in the selected units.
 const isGlucose = (mgdl, units) => isInt(mgdl) && (units === "mmol" ? RX.bgMmol : RX.bgMgdl).test(mgdlToText(mgdl, units))
 

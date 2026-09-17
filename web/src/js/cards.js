@@ -107,7 +107,7 @@ function reactive(deps, build) {
 
 function card(title, subtitle, body, { aside, id } = {}) {
     return el("section.card", { id },
-        el("div.card-head", el("h2", title), aside || null, subtitle ? el("p", subtitle) : null),
+        el("div.card-head", el("div", el("h2", title), subtitle ? el("p", subtitle) : null), aside || null),
         body)
 }
 
@@ -134,26 +134,32 @@ function toast(message, kind = "ok", ms = 4500) {
 
 // ---------- Display ----------
 function displayTab() {
-    return el("div.stack", facesCard(), brightnessCard(), oldDataCard(), timeCard())
+    return el("div.panel-stack", facesCard(), brightnessCard(), oldDataCard(), timeCard())
 }
 
 function facesCard() {
     const faces = reactive(["default_face", "face_cycle_enabled", "face_cycle_faces"], () => {
         const cycling = !!form.get("face_cycle_enabled")
         const cycle = form.get("face_cycle_faces") || []
+        const thumbs = []
         const list = el("div.faces", { role: "group", "aria-label": cycling ? "Faces to cycle" : "Default face" })
         for (const f of FACES) {
             const on = cycling ? cycle.includes(f.id) : form.get("default_face") === f.id
             const status = cycling ? (on ? `✓ ${cycle.indexOf(f.id) + 1} in cycle` : "Not in cycle") : on ? "✓ Default" : ""
+            // A face the clock's firmware doesn't draw keeps its tile, without a picture.
+            const canvas = el("canvas", { width: 192, height: 48, "aria-hidden": "true", hidden: preview.faceCount > 0 && f.id >= preview.faceCount })
+            thumbs.push({ canvas, face: f.id })
             list.append(el("button.face", {
                 type: "button", "aria-pressed": String(on), dataset: { face: f.id },
                 onclick: () => {
+                    preview.showFace(f.id)
                     if (!cycling) return form.set("default_face", f.id)
                     form.set("face_cycle_faces", on ? cycle.filter(x => x !== f.id) : [...cycle, f.id].sort((a, b) => a - b))
                     form.touch("face_cycle_faces")
                 },
-            }, el("span", f.name), status ? el("span.face-status", status) : null))
+            }, canvas, el("div.face-name", el("span", f.name), status ? el("span.face-status", status) : null), el("p.help", f.about)))
         }
+        preview.setThumbs(thumbs)
         return el("div.field", { dataset: { field: cycling ? "face_cycle_faces" : "default_face" } },
             el("p.help", cycling ? "Tap faces to add them to the cycle. Select at least two; they cycle in the order shown."
                 : "Tap a face to make it the default."),
@@ -162,10 +168,10 @@ function facesCard() {
     const interval = reactive(["face_cycle_enabled"], () => form.get("face_cycle_enabled")
         ? field("face_cycle_interval_seconds", "Change face every", segmented("face_cycle_interval_seconds", CYCLE_INTERVALS, { numeric: true, label: "Change face every" }))
         : el("span", { hidden: true }))
-    return card("Clock face", null, el("div.stack", faces, el("hr.divider"),
+    return card("Clock face", "Pictures are drawn by the clock's own firmware code, with the settings on this page.", el("div.stack", faces, el("hr.divider"),
         toggleRow("face_cycle_enabled", "Cycle selected clock faces automatically",
             "The left and right buttons move only between the selected faces while cycling is on. The default face applies only when cycling is off."),
-        interval), { id: "card_faces" })
+        interval), { aside: el("span.tag", `${FACES.length} faces`), id: "card_faces" })
 }
 
 function brightnessCard() {
@@ -175,11 +181,11 @@ function brightnessCard() {
         const mode = level === 100 ? "auto_linear" : level === 101 ? "auto_dimmed" : "manual"
         const seg = el("div.seg", { role: "group", "aria-label": "Brightness", id: idFor("brightness_level") },
             ...BRIGHTNESS_MODES.map(([m, text, value]) => el("button", {
-                type: "button", "aria-pressed": String(mode === m),
+                type: "button", "aria-pressed": String(mode === m), dataset: { value: m },
                 onclick: () => form.set("brightness_level", value == null ? lastManual : value),
             }, text)))
-        if (mode !== "manual") return el("div.stack", field("brightness_level", null, seg, "Follows the clock's light sensor."))
-        const range = el("input", { type: "range", min: 1, max: 10, step: 1, id: "f_brightness_manual" })
+        if (mode !== "manual") return el("div.stack", field("brightness_level", null, seg, "Follows the clock's light sensor. Try the room light slider in the preview."))
+        const range = el("input", { type: "range", min: 1, max: 10, step: 1, id: "f_brightness_manual", "aria-label": "Manual brightness" })
         range.value = String(level)
         const out = el("output", String(level))
         range.addEventListener("input", () => {
@@ -188,7 +194,8 @@ function brightnessCard() {
             form.set("brightness_level", lastManual)
         })
         return el("div.stack", field("brightness_level", null, seg),
-            el("div.range-row", el("label.label", { for: range.id }, "Level"), range, out))
+            el("div.range-row", el("label.label", { for: range.id }, "Level"), range, out),
+            el("p.help", "1 is the dimmest. Long-pressing the clock's left or right button also changes it."))
     })
     return card("Brightness level", null, body, { id: "card_brightness" })
 }
@@ -213,7 +220,7 @@ function oldDataCard() {
 }
 
 function timeCard() {
-    const tz = reactive(["ctx.tzNames"], () => {
+    const tz = reactive(["ctx.tzNames", "tz"], () => {
         const list = ui.timezones
         if (!list) return field("tz", "Clock time zone", el("select", { id: idFor("tz"), disabled: true }, el("option", form.get("tz") || "Loading time zones…")))
         const s = el("select", { id: idFor("tz"), name: "tz" })
@@ -226,7 +233,12 @@ function timeCard() {
             form.set("tz", z ? z.name : "")
             form.touch("tz")
         })
-        return field("tz", "Clock time zone", s, list.length ? null : "The time zone list could not be loaded.")
+        // One tap to put the clock in the zone this phone or computer is in.
+        const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const suggest = ui.timezoneNames.has(browserZone) && form.get("tz") !== browserZone
+            ? el("button.btn.sm", { type: "button", id: "use_browser_tz", onclick: () => { s.value = browserZone; s.dispatchEvent(new Event("change")) } }, `Use ${browserZone}`)
+            : null
+        return field("tz", "Clock time zone", suggest ? el("div.row", s, suggest) : s, list.length ? null : "The time zone list could not be loaded.")
     })
     return card("Time", null, el("div.grid", tz,
         field("time_format", "Time format", segmented("time_format", TIME_FORMATS, { label: "Time format" }))), { id: "card_time" })
@@ -234,7 +246,7 @@ function timeCard() {
 
 // ---------- Glucose ----------
 function glucoseTab() {
-    return el("div.stack", sourceCard(), rangesCard())
+    return el("div.panel-stack", sourceCard(), rangesCard())
 }
 
 function sourceCard() {
@@ -374,9 +386,10 @@ async function loadFromNightscout() {
 
 // ---------- Alarms ----------
 function alarmsTab() {
-    return el("div.stack",
-        el("div.notice.info", el("b", "How alarms work. "),
-            "The volume is moderate, so test each sound with Try on clock. An alarm beeps 2 times (high), 3 times (low) or 4 times (urgent low), then pauses for the repeat interval; intensive mode keeps beeping without a pause. This continues until glucose is back in range or you press the clock's middle button to snooze, which shows SNOOZED for the snooze time. An alert with alert windows stays silent outside them."),
+    return el("div.panel-stack",
+        el("div.notice.info", icon("info"), el("div",
+            el("b", "How alarms work. "),
+            "The volume is moderate, so test each sound with Try on clock. An alarm beeps 2 times (high), 3 times (low) or 4 times (urgent low), then pauses for the repeat interval; intensive mode keeps beeping without a pause. This continues until glucose is back in range or you press the clock's middle button to snooze, which shows SNOOZED for the snooze time. An alert with alert windows stays silent outside them.")),
         ...ALARMS.map(alarmCard),
         card("Repeat", null, el("div.stack",
             reactive(["alarm_intensive_mode"], () => {
@@ -425,12 +438,16 @@ function alarmCard(a) {
                 toast(ok ? "You should hear the alert playing." : "Could not play the alert.", ok ? "ok" : "bad")
             } catch (e) { toast(e.message, "bad") }
         } }, icon("speaker"), "Try on clock")
+        const tryHere = el("button.btn.sm.ghost", { type: "button", dataset: { alwaysOn: "1" }, onclick: () => {
+            if (!isValidRtttl(melody.value)) return toast("Please enter a valid RTTTL melody before testing.", "warn")
+            if (!preview.playMelody(melody.value.trim())) toast("The preview is still loading.", "warn")
+        } }, icon("play"), "Play here")
 
-        return el("div.stack",
+        return el("div.stack.alarm-body",
             el("div.grid",
                 field(key("value"), a.compare, numberInput(key("value"), { units })),
                 field(key("snooze_interval"), "Snooze for", selectInput(key("snooze_interval"), SNOOZES, { numeric: true }))),
-            field(key("melody"), "Alert sound", el("div.stack", el("div.row.melody-row", preset, tryIt), melody), "Choose a sound or enter a custom RTTTL melody."),
+            field(key("melody"), "Alert sound", el("div.stack", el("div.row", preset, tryIt, tryHere), melody), "Choose a sound or enter a custom RTTTL melody."),
             alertWindows(a))
     })
     fs.append(body)
@@ -479,7 +496,7 @@ function alertWindows(a) {
 
 // ---------- System ----------
 function systemTab() {
-    return el("div.stack", wifiCard(), extraWifiCard(), hostnameCard(), loginCard(), versionCard())
+    return el("div.panel-stack", wifiCard(), extraWifiCard(), hostnameCard(), loginCard(), versionCard())
 }
 
 function wifiCard() {
@@ -564,8 +581,6 @@ function renderAll() { Object.keys(TABS).forEach(rerenderTab) }
 function showTab(name) {
     ui.tab = name
     for (const n of Object.keys(TABS)) $(`#tab_${n}`).hidden = n !== name
-    // The preview shows what the Display and Glucose settings change.
-    $("#card_preview").hidden = name !== "display" && name !== "glucose"
     $$("[data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)))
     try { sessionStorage.setItem("tab", name) } catch (e) { /* private mode */ }
 }
