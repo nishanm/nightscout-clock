@@ -27,7 +27,7 @@ const LLU_REGIONS = [
     ["LA", "Latin America"], ["RU", "Russia"],
 ]
 const UNITS = [["mgdl", "mg/dl"], ["mmol", "mmol/l"]]
-// Lowest range first, in the clock's fixed colours. `limit` is the key that ends (or starts) the range.
+// Lowest range first, in the clock's fixed colors. `limit` is the key that ends (or starts) the range.
 const BANDS = [
     { name: "Urgent low", color: "red", limit: "low_urgent_mgdl", label: "Up to" },
     { name: "Low", color: "yellow", limit: "low_mgdl", label: "Up to" },
@@ -226,7 +226,7 @@ function normalizeLoaded(c) {
 function tabOfKey(key) {
     if (/^(ssid|password|additional_|custom_hostname|web_auth)/.test(key)) return "system"
     if (/^alarm_/.test(key)) return "alarms"
-    if (/^(data_source|ns_|api_secret|nightscout|dexcom|librelinkup|medtrum|units|low_|high_|custom_nodatatimer)/.test(key)) return "glucose"
+    if (/^(data_source|ns_|api_secret|nightscout|dexcom|librelinkup|medtrum|units|low_|high_)/.test(key)) return "glucose"
     return "display"
 }
 

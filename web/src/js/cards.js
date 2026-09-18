@@ -201,8 +201,14 @@ function oldDataCard() {
             el("i", { style: `background:${COLOR_HEX[value]}` }), text))
     }
     paint()
-    return card("Color when data is old", null, field("data_old_color", null, box,
-        "Also used for the \"no data\" screen. Gray is not visible at the lowest brightness, so if you run the clock dim, choose one of the others to keep stale readings readable."),
+    return card("When data is old", null, el("div.stack",
+        field("data_old_color", "Color", box,
+            "Also used for the \"no data\" screen. Gray is not visible at the lowest brightness, so if you run the clock dim, choose one of the others to keep stale readings readable."),
+        el("hr.divider"),
+        toggleRow("custom_nodatatimer_enable", "Custom no data timer", "Minutes without a reading before the clock shows data as old. Otherwise 20 minutes."),
+        reactive(["custom_nodatatimer_enable"], () => form.get("custom_nodatatimer_enable")
+            ? el("div.grid", field("custom_nodatatimer", "Minutes (6 to 60)", numberInput("custom_nodatatimer")))
+            : el("span", { hidden: true }))),
         { id: "card_old_data" })
 }
 
@@ -228,7 +234,7 @@ function timeCard() {
 
 // ---------- Glucose ----------
 function glucoseTab() {
-    return el("div.stack", sourceCard(), rangesCard(), noDataCard())
+    return el("div.stack", sourceCard(), rangesCard())
 }
 
 function sourceCard() {
@@ -364,15 +370,6 @@ async function loadFromNightscout() {
     } finally {
         btn.disabled = form.get("data_source") !== "nightscout"
     }
-}
-
-function noDataCard() {
-    return card("No data timer", null, el("div.stack",
-        toggleRow("custom_nodatatimer_enable", "Custom no data timer", "Minutes without a reading before the clock shows data as old. Otherwise 20 minutes."),
-        reactive(["custom_nodatatimer_enable"], () => form.get("custom_nodatatimer_enable")
-            ? el("div.grid", field("custom_nodatatimer", "Minutes (6 to 60)", numberInput("custom_nodatatimer")))
-            : el("span", { hidden: true }))),
-        { id: "card_nodata" })
 }
 
 // ---------- Alarms ----------

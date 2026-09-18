@@ -96,7 +96,7 @@ input:disabled, select:disabled, button:disabled { opacity: .5; cursor: not-allo
 .seg button { appearance: none; flex: 1 1 auto; min-height: 40px; border: 0; background: none; color: var(--text-2); font: 600 14px/18px var(--sans); padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--primary-fill); color: #fff; }
 
-/* colour swatches */
+/* color swatches */
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .swatch { appearance: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--line-2); background: var(--surface-sunk); color: var(--text-2); border-radius: 999px; padding: 4px 14px 4px 8px; font: 14px/20px var(--sans); cursor: pointer; }
 .swatch i { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); }
