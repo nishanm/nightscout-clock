@@ -87,16 +87,17 @@ void DisplayManager_::setup() {
 }
 
 void DisplayManager_::applySettings() {
-    int displayBrightness = 70;
-
-    if (SettingsManager.settings.brightness_mode == BRIGHTNES_MODE::MANUAL) {
-        // make brightness grow logarithmically
-        float t = constrain(SettingsManager.settings.brightness_level / 10.0f, 0.0f, 1.0f);
-        const float gamma = 2.2f;       // raise to 2.4–2.6 for darker lows
-        float curved = powf(t, gamma);  // 0..1, biased toward 0
-
-        displayBrightness = (int)lroundf(MIN_BRIGHTNESS + curved * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
+    if (SettingsManager.settings.brightness_mode != BRIGHTNES_MODE::MANUAL) {
+        // Keep the current brightness until the light-sensor loop updates automatic mode.
+        return;
     }
+
+    // make brightness grow logarithmically
+    float t = constrain(SettingsManager.settings.brightness_level / 10.0f, 0.0f, 1.0f);
+    const float gamma = 2.2f;       // raise to 2.4–2.6 for darker lows
+    float curved = powf(t, gamma);  // 0..1, biased toward 0
+
+    int displayBrightness = (int)lroundf(MIN_BRIGHTNESS + curved * (MAX_BRIGHTNESS - MIN_BRIGHTNESS));
 
 #ifdef DEBUG_BRIGHTNESS
     DEBUG_PRINTLN(
@@ -177,6 +178,20 @@ void DisplayManager_::drawBitmap(
     matrix->drawBitmap(x, y, bitmap, w, h, color);
 }
 
+void DisplayManager_::drawIndexedSprite(
+    int16_t x, int16_t y, const uint8_t sprite[], int16_t w, int16_t h, const uint16_t palette[]) {
+    for (int16_t row = 0; row < h; row++) {
+        for (int16_t col = 0; col < w; col++) {
+            uint8_t paletteIndex = pgm_read_byte(&sprite[row * w + col]);
+            if (paletteIndex == 0) {
+                continue;  // transparent, leave whatever is already on the matrix
+            }
+            uint16_t color = pgm_read_word(&palette[paletteIndex - 1]);
+            matrix->drawPixel(x + col, y + row, color);
+        }
+    }
+}
+
 void DisplayManager_::scrollColorfulText(String message) {
     auto finalPosition = -1 * getTextWidth(message.c_str(), 1);
 
@@ -216,7 +231,8 @@ void DisplayManager_::HSVtext(int16_t x, int16_t y, const char* text, bool clear
 
 void DisplayManager_::showFatalError(String errorMessage) {
     DEBUG_PRINTF("Fatal error: %s\n", errorMessage.c_str());
-    setTextColor(COLOR_GRAY);
+    setFont(FONT_TYPE::MEDIUM);
+    setTextColor(COLOR_WHITE);
 
     auto startMills = millis();
 
