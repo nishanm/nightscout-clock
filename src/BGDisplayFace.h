@@ -36,6 +36,15 @@ public:
     virtual void showNoData() const;
     virtual RenderDecision getRenderDecision(const RenderContext& ctx) const;
     virtual void renderPartial(const RenderContext& ctx) const;
+    // Faces that change every second get a TIME_TICK every second instead of every minute.
+    virtual bool ticksEverySecond() const;
+    // Suppress new alarms while this face is selected; existing alarms continue normally.
+    virtual bool suppressesNewAlarms() const;
+
+protected:
+    // Configurable color for old readings and no-data screens;
+    // gray can be invisible at minimum brightness.
+    uint16_t getDataOldColor() const;
 };
 
 #endif

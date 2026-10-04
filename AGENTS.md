@@ -18,7 +18,7 @@ When adding firmware behavior, prefer extending the existing module family inste
 
 `lib/` contains third-party libraries vendored into the repository, including `LightResistor/`, `Hashing/`, `MelodyPlayer/`, `Fonts/`, and `Improv/`. Prefer keeping application-specific code in `src/`; only add to `lib/` when importing or maintaining an external library.
 
-`data/` contains the on-device configuration UI and the runtime web assets packed into the LittleFS image served by the clock. `data_dev/` supports local web UI development when using the IDE's local web server; pages in `data/` may reference assets from both `data/` and `data_dev/` during that workflow.
+`data/` contains the runtime web assets packed into the LittleFS image served by the clock. The configuration UI source is in `web/src/`, with the original icon and timezone JSON in `web/src/assets/`. PlatformIO runs `node web/build.mjs` before filesystem builds to generate `data/index.html.gz`, `data/favicon.ico.gz`, and `data/tzdata.json.gz`. These outputs are ignored by Git; commit their sources instead. Node.js must match the version in `.node-version`; no npm packages are required.
 
 `www/` is the GitHub Pages site, including the browser installer and debug pages; it is not part of the firmware filesystem image. `scripts/` contains contributor tooling for local build, upload, monitoring, release, and emulator/test-data tasks. Core firmware build configuration lives in `platformio.ini` and `partitions.csv`; `wokwi.toml` is only for experimental emulator setup and is not part of the regular test workflow.
 
@@ -34,7 +34,7 @@ Use the IDE's PlatformIO actions or the helper scripts in `scripts/`; avoid call
 
 ### Less common helpers
 
-- `scripts/monitor.sh`: opens the serial monitor directly and saves logs under `log/`.
+- `scripts/monitor.sh`: opens the serial monitor directly and saves logs under `logs/` using PlatformIO's `log2file` filter.
 - `scripts/reset.sh`: use this if the device becomes unstable and does not restart cleanly after upload.
 - `scripts/upload.sh --all`: use only for a full device refresh, when bootloader, partitions, firmware, and LittleFS all need to be reflashed.
 - `scripts/ns_emulator.py`: sends sample glucose entries to the device API for testing data processing and display behavior.
@@ -63,7 +63,13 @@ Use the repository's current naming patterns instead of introducing a new scheme
 - Settings fields use `snake_case`; keep new persisted configuration names aligned with the existing JSON and settings model.
 - Global/shared items are kept explicit in files like `globals.*` and `enums.h`; avoid adding new cross-cutting globals unless there is no cleaner boundary.
 
-For the web UI, keep JavaScript style consistent with the existing files in `data/` and `data_dev/`: semicolon-light, mostly `const`/`let`, early returns for small guards, and descriptive handler names such as `toggleWebAuthSettings`. Reuse the existing HTML/JS structure instead of introducing new frontend tooling or frameworks.
+For the web UI, keep JavaScript style consistent with the existing files in `web/src/js/`: semicolon-light, mostly `const`/`let`, early returns for small guards, and descriptive function names such as `loadSettings`. Reuse the existing HTML/JS structure instead of introducing new frontend tooling, frameworks or libraries; the page must work on a phone connected to the clock's setup network, with no internet.
+
+## Compatibility and Validation Scope
+
+- Firmware upgrades use a full reflash, including replacement of the configuration from `data/config_initial.json`. Do not add migration code, legacy-setting fallbacks, or downgrade compatibility unless explicitly requested.
+- Configuration is managed through the provided Web UI. Hand-edited configurations and hostile configuration submissions to `/api/save` are outside the supported workflow. Validate user-editable fields in the UI; avoid duplicating those checks throughout the firmware without a concrete need.
+- Keep checks required for normal operational failures, such as failed network requests, unavailable time, missing files, and malformed responses from external services. Keep bounds checks needed for memory safety and existing authentication controls.
 
 ## Testing Guidelines
 
@@ -75,7 +81,11 @@ Watch the serial monitor for boot issues, configuration errors, Wi-Fi problems, 
 
 ## Commit & Pull Request Guidelines
 
-Keep commit messages short, imperative, and specific, following the existing history (for example, `Fixed typo in WebUI javascript` or `Added web auth in the advanced settings`). Avoid vague summaries that do not say what changed.
+- Every commit must have a short, specific title and a body.
+- Use an imperative title that summarizes the change.
+- Explain what changed and why in the body.
+- Describe the final result, without recounting the conversation, implementation attempts, or sequence of events.
+- Do not include testing or validation details in commit messages.
 
 Before opening a pull request, start a discussion or issue for non-trivial changes so the approach can be aligned early. Pull requests should clearly state what changed, why it was needed, and how it was tested on hardware. Include screenshots when the change affects the web UI or display behavior.
 
@@ -83,4 +93,4 @@ Before opening a pull request, start a discussion or issue for non-trivial chang
 
 The upload, reset, and monitor scripts resolve the same `upload_port` through `scripts/get_port.sh`. If flashing or monitoring fails on a different machine or after reconnecting the clock, update `upload_port` in `platformio.local.ini` before troubleshooting deeper firmware issues.
 
-Treat `data/` as the runtime web UI payload and `data_dev/` as the local development source. If you change the device-served UI, verify both the browser behavior and the rebuilt filesystem image on hardware.
+Treat `web/src/` as the web UI source and `data/` as the runtime payload built from it. If you change the device-served UI, verify both the browser behavior and the rebuilt filesystem image on hardware.

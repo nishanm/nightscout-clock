@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
+#include "SettingsAlarm.h"
 #include "globals.h"
 
 namespace {
@@ -11,6 +12,7 @@ bool isValidFaceCycleInterval(int intervalSeconds) {
     return intervalSeconds == 10 || intervalSeconds == 30 || intervalSeconds == 60 ||
            intervalSeconds == 120 || intervalSeconds == 180 || intervalSeconds == 300;
 }
+
 }  // namespace
 
 // The getter for the instantiated singleton instance
@@ -82,6 +84,10 @@ JsonDocument* SettingsManager_::readConfigJsonFile() {
     }
 }
 
+bool SettingsManager_::isValidAlarmRepeatInterval(int intervalSeconds) {
+    return intervalSeconds == 60 || intervalSeconds == 120 || intervalSeconds == 300;
+}
+
 bool SettingsManager_::loadSettingsFromFile() {
     auto doc = readConfigJsonFile();
     if (doc == NULL)
@@ -119,31 +125,29 @@ bool SettingsManager_::loadSettingsFromFile() {
         settings.face_cycle_interval_seconds = 60;
     }
 
-    settings.face_cycle_faces.clear();
-    bool faceAlreadyAdded[6] = {};
-    if ((*doc)["face_cycle_faces"].is<JsonArray>()) {
-        for (JsonVariant face : (*doc)["face_cycle_faces"].as<JsonArray>()) {
+    settings.inactive_faces.clear();
+    bool faceAlreadyAdded[CLOCK_FACE_COUNT] = {};
+    if ((*doc)["inactive_faces"].is<JsonArray>()) {
+        for (JsonVariant face : (*doc)["inactive_faces"].as<JsonArray>()) {
             if (!face.is<int>()) {
                 continue;
             }
 
             int faceId = face.as<int>();
-            if (faceId >= 0 && faceId < 6 && !faceAlreadyAdded[faceId]) {
-                settings.face_cycle_faces.push_back(faceId);
+            if (faceId >= 0 && faceId < CLOCK_FACE_COUNT && !faceAlreadyAdded[faceId]) {
+                settings.inactive_faces.push_back(faceId);
                 faceAlreadyAdded[faceId] = true;
             }
         }
     }
-    if (settings.face_cycle_faces.empty()) {
-        int fallbackFace = settings.default_clockface >= 0 && settings.default_clockface < 6
-                               ? settings.default_clockface
-                               : 0;
-        settings.face_cycle_faces.push_back(fallbackFace);
-    }
-    if (settings.face_cycle_enabled && settings.face_cycle_faces.size() < 2) {
+    if (settings.face_cycle_enabled &&
+        CLOCK_FACE_COUNT - static_cast<int>(settings.inactive_faces.size()) < 2) {
         DEBUG_PRINTLN("Too few valid faces in config, disabling face cycling");
         settings.face_cycle_enabled = false;
     }
+
+    settings.face_schedule_enabled = (*doc)["face_schedule_enabled"] | false;
+    settings.face_schedule = readFaceSchedule((*doc)["face_schedule"]);
 
     String data_source = (*doc)["data_source"].as<String>();
     if (data_source == "nightscout") {
@@ -194,20 +198,28 @@ bool SettingsManager_::loadSettingsFromFile() {
     settings.alarm_urgent_low_enabled = (*doc)["alarm_urgent_low_enabled"].as<bool>();
     settings.alarm_urgent_low_mgdl = (*doc)["alarm_urgent_low_value"].as<int>();
     settings.alarm_urgent_low_snooze_minutes = (*doc)["alarm_urgent_low_snooze_interval"].as<int>();
-    settings.alarm_urgent_low_silence_interval =
-        (*doc)["alarm_urgent_low_silence_interval"].as<String>();
+    settings.alarm_urgent_low_alert_windows =
+        readAlertWindows((*doc)["alarm_urgent_low_alert_windows"]);
     settings.alarm_low_enabled = (*doc)["alarm_low_enabled"].as<bool>();
     settings.alarm_low_mgdl = (*doc)["alarm_low_value"].as<int>();
     settings.alarm_low_snooze_minutes = (*doc)["alarm_low_snooze_interval"].as<int>();
-    settings.alarm_low_silence_interval = (*doc)["alarm_low_silence_interval"].as<String>();
+    settings.alarm_low_alert_windows =
+        readAlertWindows((*doc)["alarm_low_alert_windows"]);
     settings.alarm_high_enabled = (*doc)["alarm_high_enabled"].as<bool>();
     settings.alarm_high_mgdl = (*doc)["alarm_high_value"].as<int>();
     settings.alarm_high_snooze_minutes = (*doc)["alarm_high_snooze_interval"].as<int>();
-    settings.alarm_high_silence_interval = (*doc)["alarm_high_silence_interval"].as<String>();
+    settings.alarm_high_alert_windows =
+        readAlertWindows((*doc)["alarm_high_alert_windows"]);
     settings.alarm_high_melody = (*doc)["alarm_high_melody"].as<String>();
     settings.alarm_low_melody = (*doc)["alarm_low_melody"].as<String>();
     settings.alarm_urgent_low_melody = (*doc)["alarm_urgent_low_melody"].as<String>();
     settings.alarm_intensive_mode = (*doc)["alarm_intensive_mode"].as<bool>();
+
+    settings.alarm_repeat_interval_seconds = (*doc)["alarm_repeat_interval_seconds"] | 300;
+    if (!isValidAlarmRepeatInterval(settings.alarm_repeat_interval_seconds)) {
+        DEBUG_PRINTLN("Invalid alarm repeat interval in config, defaulting to 300 seconds");
+        settings.alarm_repeat_interval_seconds = 300;
+    }
 
     // Additional WiFi
     settings.additional_wifi_enable = (*doc)["additional_wifi_enable"].as<bool>();
@@ -232,6 +244,21 @@ bool SettingsManager_::loadSettingsFromFile() {
             DEBUG_PRINTLN("Custom No Data Timer value is invalid, using default value of 20 minutes.");
         }
     }
+
+    settings.data_old_color = displayColorFromString(
+        (*doc)["data_old_color"].as<String>(), DISPLAY_COLOR::GRAY);
+
+    // Big text face
+    JsonObject bigText = (*doc)["face_big_text"].as<JsonObject>();
+    String earlyStaleColor = bigText["early_stale_color"] | "off";
+    settings.face_big_text.early_stale_enabled = earlyStaleColor != "off";
+    settings.face_big_text.early_stale_color =
+        displayColorFromString(earlyStaleColor, DISPLAY_COLOR::CYAN);
+    settings.face_big_text.early_stale_minutes = bigText["early_stale_minutes"] | 6;
+
+    // Simple (dark) face
+    settings.face_simple_dark.value_color = displayColorFromString(
+        (*doc)["face_simple_dark"]["value_color"].as<String>(), DISPLAY_COLOR::WHITE);
 
     // Web interface authentication
     settings.web_auth_enable = (*doc)["web_auth_enable"].as<bool>();
@@ -265,11 +292,13 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["default_face"] = settings.default_clockface;
     (*doc)["face_cycle_enabled"] = settings.face_cycle_enabled;
     (*doc)["face_cycle_interval_seconds"] = settings.face_cycle_interval_seconds;
-    (*doc).remove("face_cycle_faces");
-    JsonArray faceCycleFaces = (*doc)["face_cycle_faces"].to<JsonArray>();
-    for (int faceId : settings.face_cycle_faces) {
-        faceCycleFaces.add(faceId);
+    (*doc).remove("inactive_faces");
+    JsonArray inactiveFaces = (*doc)["inactive_faces"].to<JsonArray>();
+    for (int faceId : settings.inactive_faces) {
+        inactiveFaces.add(faceId);
     }
+    (*doc)["face_schedule_enabled"] = settings.face_schedule_enabled;
+    writeFaceSchedule(*doc, "face_schedule", settings.face_schedule);
 
     String data_source = "no_source";
     switch (settings.bg_source) {
@@ -333,19 +362,23 @@ bool SettingsManager_::saveSettingsToFile() {
     (*doc)["alarm_urgent_low_enabled"] = settings.alarm_urgent_low_enabled;
     (*doc)["alarm_urgent_low_value"] = settings.alarm_urgent_low_mgdl;
     (*doc)["alarm_urgent_low_snooze_interval"] = settings.alarm_urgent_low_snooze_minutes;
-    (*doc)["alarm_urgent_low_silence_interval"] = settings.alarm_urgent_low_silence_interval;
+    writeAlertWindows(*doc, "alarm_urgent_low_alert_windows",
+                      settings.alarm_urgent_low_alert_windows);
     (*doc)["alarm_low_enabled"] = settings.alarm_low_enabled;
     (*doc)["alarm_low_value"] = settings.alarm_low_mgdl;
     (*doc)["alarm_low_snooze_interval"] = settings.alarm_low_snooze_minutes;
-    (*doc)["alarm_low_silence_interval"] = settings.alarm_low_silence_interval;
+    writeAlertWindows(*doc, "alarm_low_alert_windows",
+                      settings.alarm_low_alert_windows);
     (*doc)["alarm_high_enabled"] = settings.alarm_high_enabled;
     (*doc)["alarm_high_value"] = settings.alarm_high_mgdl;
     (*doc)["alarm_high_snooze_interval"] = settings.alarm_high_snooze_minutes;
-    (*doc)["alarm_high_silence_interval"] = settings.alarm_high_silence_interval;
+    writeAlertWindows(*doc, "alarm_high_alert_windows",
+                      settings.alarm_high_alert_windows);
     (*doc)["alarm_high_melody"] = settings.alarm_high_melody;
     (*doc)["alarm_low_melody"] = settings.alarm_low_melody;
     (*doc)["alarm_urgent_low_melody"] = settings.alarm_urgent_low_melody;
     (*doc)["alarm_intensive_mode"] = settings.alarm_intensive_mode;
+    (*doc)["alarm_repeat_interval_seconds"] = settings.alarm_repeat_interval_seconds;
 
     // Additional WiFi
     (*doc)["additional_wifi_enable"] = settings.additional_wifi_enable;
@@ -361,6 +394,17 @@ bool SettingsManager_::saveSettingsToFile() {
     // Custom No Data Timer
     (*doc)["custom_nodatatimer_enable"] = settings.custom_nodatatimer_enable;
     (*doc)["custom_nodatatimer"] = settings.custom_nodatatimer;
+    (*doc)["data_old_color"] = toString(settings.data_old_color);
+
+    // Big text face
+    JsonObject bigText = (*doc)["face_big_text"].to<JsonObject>();
+    bigText["early_stale_color"] = settings.face_big_text.early_stale_enabled
+                                       ? toString(settings.face_big_text.early_stale_color)
+                                       : "off";
+    bigText["early_stale_minutes"] = settings.face_big_text.early_stale_minutes;
+
+    // Simple (dark) face
+    (*doc)["face_simple_dark"]["value_color"] = toString(settings.face_simple_dark.value_color);
 
     // Web interface authentication
     (*doc)["web_auth_enable"] = settings.web_auth_enable;
